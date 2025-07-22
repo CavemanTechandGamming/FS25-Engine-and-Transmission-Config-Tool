@@ -1,0 +1,20 @@
+# FS25 Engine and Transmission Config Tool Requirements
+# 
+# This application uses Python standard library modules and CustomTkinter:
+# - tkinter (GUI framework)
+# - customtkinter (Modern GUI framework)
+# - json (JSON file handling)
+# - os (operating system interface)
+# - math (mathematical functions)
+# - typing (type hints)
+#
+# Required dependencies:
+customtkinter>=5.2.0
+
+# For converting to standalone .exe using PyInstaller:
+pyinstaller>=5.0.0
+
+# Optional: For development and testing
+# pytest>=7.0.0
+# black>=22.0.0
+# flake8>=5.0.0 
