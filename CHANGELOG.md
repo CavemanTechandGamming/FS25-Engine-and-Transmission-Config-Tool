@@ -15,8 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Issue templates for bug reports and feature requests
 - Real Windows installer via Inno Setup (`packaging/windows/setup.iss`) — single Setup `.exe`
 - In-app **About** dialog with [Buy Me a Coffee](https://www.buymeacoffee.com/caveman117) support link
-- Single-page layout: engine (left), transmission (right), XML preview/actions (bottom) — no tab switching
+- Single-page layout: engine (top) and transmission (bottom) on the left, XML preview/actions on the right — no tab switching
 - Streamlined output toolbar: one **Generate XML** action for combined engine + transmission, plus Copy / Save and preset controls
+- XML preview uses word wrap (no horizontal scrollbar); line numbers stay aligned with wrapped lines
+- XML preview vertical scrollbar is theme-matched and only appears when content overflows
+- Compact engine/transmission forms: shorter numeric inputs and paired fields so settings fit without clipping
 
 ### Changed
 

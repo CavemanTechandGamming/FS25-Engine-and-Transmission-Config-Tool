@@ -164,7 +164,6 @@ class FS25ConfigTool:
             'error': "#dc3545"
         }
         
-        self.setup_gui()
         self.apply_dark_theme()
     
     def setup_gui(self):
@@ -175,16 +174,16 @@ class FS25ConfigTool:
             self.setup_standard_gui()
     
     def setup_custom_gui(self):
-        """Set up a single-page GUI: engine | transmission, XML output below."""
+        """Set up a single-page GUI: engine/transmission stacked left, XML right."""
         main_frame = ctk.CTkFrame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        main_frame.grid_columnconfigure(0, weight=1)
-        main_frame.grid_rowconfigure(1, weight=2)  # config panels
-        main_frame.grid_rowconfigure(2, weight=3)  # XML output
+        main_frame.grid_columnconfigure(0, weight=2, minsize=420)  # forms
+        main_frame.grid_columnconfigure(1, weight=3)  # XML
+        main_frame.grid_rowconfigure(1, weight=1)
 
-        # Title row with About
+        # Title row with About (spans both columns)
         header = ctk.CTkFrame(main_frame, fg_color="transparent")
-        header.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 8))
+        header.grid(row=0, column=0, columnspan=2, sticky="ew", padx=10, pady=(10, 8))
         header.grid_columnconfigure(0, weight=1)
 
         title_label = ctk.CTkLabel(
@@ -203,36 +202,52 @@ class FS25ConfigTool:
         about_btn.grid(row=0, column=1, sticky="e", padx=(10, 0))
         Tooltip(about_btn, "About this app and support links")
 
-        # Engine (left) + Transmission (right)
-        config_row = ctk.CTkFrame(main_frame, fg_color="transparent")
-        config_row.grid(row=1, column=0, sticky="nsew", padx=6, pady=(0, 6))
-        config_row.grid_columnconfigure(0, weight=1)
-        config_row.grid_columnconfigure(1, weight=1)
-        config_row.grid_rowconfigure(0, weight=1)
+        # Left: Engine (top) + Transmission (bottom)
+        left_col = ctk.CTkFrame(main_frame, fg_color="transparent")
+        left_col.grid(row=1, column=0, sticky="nsew", padx=(6, 4), pady=(0, 6))
+        left_col.grid_columnconfigure(0, weight=1)
+        left_col.grid_rowconfigure(0, weight=1)
+        left_col.grid_rowconfigure(1, weight=1)
 
-        engine_panel = ctk.CTkScrollableFrame(config_row, label_text="Engine")
-        engine_panel.grid(row=0, column=0, sticky="nsew", padx=(4, 4), pady=4)
-        self.setup_engine_tab(engine_panel)
+        engine_panel = ctk.CTkFrame(left_col)
+        engine_panel.grid(row=0, column=0, sticky="nsew", padx=4, pady=(4, 4))
+        engine_label = ctk.CTkLabel(
+            engine_panel,
+            text="Engine",
+            font=ctk.CTkFont(size=14, weight="bold"),
+        )
+        engine_label.pack(anchor="w", padx=12, pady=(10, 0))
+        engine_body = ctk.CTkFrame(engine_panel, fg_color="transparent")
+        engine_body.pack(fill=tk.BOTH, expand=True, padx=4, pady=(0, 4))
+        self.setup_engine_tab(engine_body)
 
-        transmission_panel = ctk.CTkScrollableFrame(config_row, label_text="Transmission")
-        transmission_panel.grid(row=0, column=1, sticky="nsew", padx=(4, 4), pady=4)
-        self.setup_transmission_tab(transmission_panel)
+        transmission_panel = ctk.CTkFrame(left_col)
+        transmission_panel.grid(row=1, column=0, sticky="nsew", padx=4, pady=(4, 4))
+        transmission_label = ctk.CTkLabel(
+            transmission_panel,
+            text="Transmission",
+            font=ctk.CTkFont(size=14, weight="bold"),
+        )
+        transmission_label.pack(anchor="w", padx=12, pady=(10, 0))
+        transmission_body = ctk.CTkFrame(transmission_panel, fg_color="transparent")
+        transmission_body.pack(fill=tk.BOTH, expand=True, padx=4, pady=(0, 4))
+        self.setup_transmission_tab(transmission_body)
 
-        # Generated XML + actions (bottom)
+        # Right: Generated XML + actions
         output_panel = ctk.CTkFrame(main_frame)
-        output_panel.grid(row=2, column=0, sticky="nsew", padx=6, pady=(0, 6))
+        output_panel.grid(row=1, column=1, sticky="nsew", padx=(4, 6), pady=(0, 6))
         self.setup_output_tab(output_panel)
 
     def setup_standard_gui(self):
         """Set up a single-page GUI using standard Tkinter widgets."""
         main_frame = tk.Frame(self.root, bg=self.colors['bg'])
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        main_frame.grid_columnconfigure(0, weight=1)
-        main_frame.grid_rowconfigure(1, weight=2)
-        main_frame.grid_rowconfigure(2, weight=3)
+        main_frame.grid_columnconfigure(0, weight=2, minsize=420)
+        main_frame.grid_columnconfigure(1, weight=3)
+        main_frame.grid_rowconfigure(1, weight=1)
 
         header = tk.Frame(main_frame, bg=self.colors['bg'])
-        header.grid(row=0, column=0, sticky="ew", pady=(0, 8))
+        header.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 8))
 
         title_label = tk.Label(
             header,
@@ -253,34 +268,34 @@ class FS25ConfigTool:
         about_btn.pack(side=tk.RIGHT)
         Tooltip(about_btn, "About this app and support links")
 
-        config_row = tk.Frame(main_frame, bg=self.colors['bg'])
-        config_row.grid(row=1, column=0, sticky="nsew", pady=(0, 6))
-        config_row.grid_columnconfigure(0, weight=1)
-        config_row.grid_columnconfigure(1, weight=1)
-        config_row.grid_rowconfigure(0, weight=1)
+        left_col = tk.Frame(main_frame, bg=self.colors['bg'])
+        left_col.grid(row=1, column=0, sticky="nsew", padx=(0, 4))
+        left_col.grid_columnconfigure(0, weight=1)
+        left_col.grid_rowconfigure(0, weight=1)
+        left_col.grid_rowconfigure(1, weight=1)
 
         engine_panel = tk.LabelFrame(
-            config_row,
+            left_col,
             text="Engine",
             bg=self.colors['bg'],
             fg=self.colors['fg'],
             font=("Arial", 10, "bold"),
         )
-        engine_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
+        engine_panel.grid(row=0, column=0, sticky="nsew", pady=(0, 4))
         self.setup_engine_tab(engine_panel)
 
         transmission_panel = tk.LabelFrame(
-            config_row,
+            left_col,
             text="Transmission",
             bg=self.colors['bg'],
             fg=self.colors['fg'],
             font=("Arial", 10, "bold"),
         )
-        transmission_panel.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
+        transmission_panel.grid(row=1, column=0, sticky="nsew", pady=(4, 0))
         self.setup_transmission_tab(transmission_panel)
 
         output_panel = tk.Frame(main_frame, bg=self.colors['bg'])
-        output_panel.grid(row=2, column=0, sticky="nsew")
+        output_panel.grid(row=1, column=1, sticky="nsew", padx=(4, 0))
         self.setup_output_tab(output_panel)
     
     def setup_engine_tab(self, parent):
@@ -291,98 +306,79 @@ class FS25ConfigTool:
             self.setup_standard_engine_tab(parent)
     
     def setup_custom_engine_tab(self, parent):
-        """Set up engine panel using CustomTkinter widgets."""
-        preset_frame = ctk.CTkFrame(parent)
-        preset_frame.pack(fill=tk.X, padx=6, pady=5)
-
-        preset_label = ctk.CTkLabel(
-            preset_frame,
-            text="Presets",
-            font=ctk.CTkFont(size=13, weight="bold"),
-        )
-        preset_label.pack(anchor="w", padx=8, pady=(6, 2))
-
-        preset_row = ctk.CTkFrame(preset_frame, fg_color="transparent")
-        preset_row.pack(fill=tk.X, padx=6, pady=(0, 6))
+        """Set up engine panel using CustomTkinter widgets (compact paired fields)."""
+        preset_row = ctk.CTkFrame(parent, fg_color="transparent")
+        preset_row.pack(fill=tk.X, padx=8, pady=(6, 4))
 
         preset_combo = ctk.CTkOptionMenu(
             preset_row,
             values=list(PresetManager.get_engine_presets().keys()),
             command=self.load_engine_preset,
+            width=220,
         )
-        preset_combo.pack(side=tk.LEFT, padx=(2, 6), pady=4)
+        preset_combo.pack(side=tk.LEFT, padx=(0, 6))
         self.engine_preset_dropdown = preset_combo
 
         load_preset_btn = ctk.CTkButton(
             preset_row,
             text="Load",
-            width=70,
+            width=64,
             command=lambda: self.load_engine_preset(preset_combo.get()),
         )
-        load_preset_btn.pack(side=tk.LEFT, padx=2, pady=4)
+        load_preset_btn.pack(side=tk.LEFT)
 
-        settings_frame = ctk.CTkFrame(parent)
-        settings_frame.pack(fill=tk.BOTH, expand=True, padx=6, pady=5)
-
-        settings_label = ctk.CTkLabel(
-            settings_frame,
-            text="Settings",
-            font=ctk.CTkFont(size=13, weight="bold"),
-        )
-        settings_label.pack(anchor="w", padx=8, pady=(8, 4))
-
-        fields = ctk.CTkFrame(settings_frame, fg_color="transparent")
-        fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
+        fields = ctk.CTkFrame(parent, fg_color="transparent")
+        fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(2, 6))
 
         self.create_custom_input_field(
-            fields, "Engine Name:", self.engine_data['name'],
+            fields, "Name:", self.engine_data['name'],
             "Enter the name of the engine",
         )
-        self.create_custom_input_field(
-            fields, "Engine Cost ($):", self.engine_data['cost'],
-            "Enter the cost of the engine in dollars",
+        self._ctk_field_row(
+            fields,
+            ("Cost ($):", self.engine_data['cost'],
+             "Enter the cost of the engine in dollars", 90),
+            ("HP:", self.engine_data['horsepower'],
+             "Enter the engine's rated horsepower. Used to calculate torque curve", 80),
         )
-        self.create_custom_input_field(
-            fields, "Horsepower (HP):", self.engine_data['horsepower'],
-            "Enter the engine's rated horsepower. Used to calculate torque curve",
+        self._ctk_field_row(
+            fields,
+            ("Min RPM:", self.engine_data['min_rpm'],
+             "Enter the minimum RPM of the engine", 90),
+            ("Max RPM:", self.engine_data['max_rpm'],
+             "Enter the maximum RPM of the engine (default: 3500)", 90),
         )
-        self.create_custom_input_field(
-            fields, "Minimum RPM:", self.engine_data['min_rpm'],
-            "Enter the minimum RPM of the engine",
+        fuel_row = ctk.CTkFrame(fields, fg_color="transparent")
+        fuel_row.pack(fill=tk.X, pady=3)
+        fuel_row.grid_columnconfigure(0, weight=1)
+        fuel_row.grid_columnconfigure(1, weight=0)
+
+        fuel_cell = self._ctk_field_cell(
+            fuel_row, "Fuel Scale:", self.engine_data['fuel_usage_scale'],
+            "Enter the fuel usage scale factor (default: 1.0)", entry_width=90,
         )
-        self.create_custom_input_field(
-            fields, "Maximum RPM:", self.engine_data['max_rpm'],
-            "Enter the maximum RPM of the engine (default: 3500)",
-        )
-        self.create_custom_input_field(
-            fields, "Fuel Usage Scale:", self.engine_data['fuel_usage_scale'],
-            "Enter the fuel usage scale factor (default: 1.0)",
-        )
+        fuel_cell.grid(row=0, column=0, sticky="ew", padx=(0, 8))
 
         turbo_check = ctk.CTkCheckBox(
-            fields,
+            fuel_row,
             text="Turbocharged",
             variable=self.engine_data['turbocharged'],
         )
-        turbo_check.pack(anchor="w", pady=8)
+        turbo_check.grid(row=0, column=1, sticky="w")
         Tooltip(turbo_check, "Check if the engine is turbocharged. Affects torque curve generation")
     
     def setup_standard_engine_tab(self, parent):
-        """Set up engine panel using standard Tkinter widgets."""
-        preset_frame = tk.LabelFrame(
-            parent, text="Presets",
-            bg=self.colors['bg'], fg=self.colors['fg'],
-            font=("Arial", 10, "bold"),
-        )
-        preset_frame.pack(fill=tk.X, padx=6, pady=5)
+        """Set up engine panel using standard Tkinter widgets (compact paired fields)."""
+        preset_row = tk.Frame(parent, bg=self.colors['bg'])
+        preset_row.pack(fill=tk.X, padx=8, pady=(6, 4))
 
         preset_var = tk.StringVar()
         preset_combo = ttk.Combobox(
-            preset_frame, textvariable=preset_var,
+            preset_row, textvariable=preset_var,
             values=list(PresetManager.get_engine_presets().keys()),
             state="readonly", width=28,
         )
-        preset_combo.pack(side=tk.LEFT, padx=8, pady=8)
+        preset_combo.pack(side=tk.LEFT, padx=(0, 6))
         preset_combo.bind(
             '<<ComboboxSelected>>',
             lambda e: self.load_engine_preset(preset_var.get()),
@@ -390,63 +386,49 @@ class FS25ConfigTool:
         self.engine_preset_dropdown = preset_combo
 
         load_preset_btn = tk.Button(
-            preset_frame, text="Load",
+            preset_row, text="Load",
             command=lambda: self.load_engine_preset(preset_var.get()),
             bg=self.colors['button_bg'], fg=self.colors['fg'],
             relief=tk.RAISED, borderwidth=1,
         )
-        load_preset_btn.pack(side=tk.LEFT, padx=5, pady=8)
+        load_preset_btn.pack(side=tk.LEFT)
 
-        settings_frame = tk.LabelFrame(
-            parent, text="Settings",
-            bg=self.colors['bg'], fg=self.colors['fg'],
-            font=("Arial", 10, "bold"),
-        )
-        settings_frame.pack(fill=tk.BOTH, expand=True, padx=6, pady=5)
-
-        fields = tk.Frame(settings_frame, bg=self.colors['bg'])
-        fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        fields = tk.Frame(parent, bg=self.colors['bg'])
+        fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(2, 6))
 
         self.create_input_field(
-            fields, "Engine Name:", self.engine_data['name'],
+            fields, "Name:", self.engine_data['name'],
             "Enter the name of the engine",
         )
-        self.create_input_field(
-            fields, "Engine Cost ($):", self.engine_data['cost'],
-            "Enter the cost of the engine in dollars",
+        self._tk_field_row(
+            fields,
+            ("Cost ($):", self.engine_data['cost'],
+             "Enter the cost of the engine in dollars", 10),
+            ("HP:", self.engine_data['horsepower'],
+             "Enter the engine's rated horsepower. Used to calculate torque curve", 8),
         )
-        self.create_input_field(
-            fields, "Horsepower (HP):", self.engine_data['horsepower'],
-            "Enter the engine's rated horsepower. Used to calculate torque curve",
+        self._tk_field_row(
+            fields,
+            ("Min RPM:", self.engine_data['min_rpm'],
+             "Enter the minimum RPM of the engine", 10),
+            ("Max RPM:", self.engine_data['max_rpm'],
+             "Enter the maximum RPM of the engine (default: 3500)", 10),
         )
+        fuel_row = tk.Frame(fields, bg=self.colors['bg'])
+        fuel_row.pack(fill=tk.X, pady=3)
+
         self.create_input_field(
-            fields, "Minimum RPM:", self.engine_data['min_rpm'],
-            "Enter the minimum RPM of the engine",
-        )
-        self.create_input_field(
-            fields, "Maximum RPM:", self.engine_data['max_rpm'],
-            "Enter the maximum RPM of the engine (default: 3500)",
-        )
-        self.create_input_field(
-            fields, "Fuel Usage Scale:", self.engine_data['fuel_usage_scale'],
+            fuel_row, "Fuel Scale:", self.engine_data['fuel_usage_scale'],
             "Enter the fuel usage scale factor (default: 1.0)",
+            entry_width=10, expand=False, fill_row=False,
         )
-
-        turbo_frame = tk.Frame(fields, bg=self.colors['bg'])
-        turbo_frame.pack(fill=tk.X, pady=5)
-
-        turbo_label = tk.Label(
-            turbo_frame, text="Turbocharged:",
-            bg=self.colors['bg'], fg=self.colors['fg'],
-        )
-        turbo_label.pack(side=tk.LEFT)
-
         turbo_check = tk.Checkbutton(
-            turbo_frame, variable=self.engine_data['turbocharged'],
+            fuel_row, text="Turbocharged",
+            variable=self.engine_data['turbocharged'],
             bg=self.colors['bg'], fg=self.colors['fg'],
             selectcolor=self.colors['input_bg'],
         )
-        turbo_check.pack(side=tk.LEFT, padx=5)
+        turbo_check.pack(side=tk.LEFT, padx=(12, 0))
         Tooltip(turbo_check, "Check if the engine is turbocharged. Affects torque curve generation")
     
     def setup_transmission_tab(self, parent):
@@ -457,206 +439,186 @@ class FS25ConfigTool:
             self.setup_standard_transmission_tab(parent)
     
     def setup_custom_transmission_tab(self, parent):
-        """Set up transmission panel using CustomTkinter widgets."""
-        preset_frame = ctk.CTkFrame(parent)
-        preset_frame.pack(fill=tk.X, padx=6, pady=5)
-
-        preset_label = ctk.CTkLabel(
-            preset_frame,
-            text="Presets",
-            font=ctk.CTkFont(size=13, weight="bold"),
-        )
-        preset_label.pack(anchor="w", padx=8, pady=(6, 2))
-
-        preset_row = ctk.CTkFrame(preset_frame, fg_color="transparent")
-        preset_row.pack(fill=tk.X, padx=6, pady=(0, 6))
+        """Set up transmission panel using CustomTkinter widgets (compact paired fields)."""
+        preset_row = ctk.CTkFrame(parent, fg_color="transparent")
+        preset_row.pack(fill=tk.X, padx=8, pady=(6, 4))
 
         preset_combo = ctk.CTkOptionMenu(
             preset_row,
             values=list(PresetManager.get_transmission_presets().keys()),
             command=self.load_transmission_preset,
+            width=220,
         )
-        preset_combo.pack(side=tk.LEFT, padx=(2, 6), pady=4)
+        preset_combo.pack(side=tk.LEFT, padx=(0, 6))
         self.transmission_preset_dropdown = preset_combo
 
         load_preset_btn = ctk.CTkButton(
             preset_row,
             text="Load",
-            width=70,
+            width=64,
             command=lambda: self.load_transmission_preset(preset_combo.get()),
         )
-        load_preset_btn.pack(side=tk.LEFT, padx=2, pady=4)
+        load_preset_btn.pack(side=tk.LEFT)
 
-        settings_frame = ctk.CTkFrame(parent)
-        settings_frame.pack(fill=tk.BOTH, expand=True, padx=6, pady=5)
-
-        settings_label = ctk.CTkLabel(
-            settings_frame,
-            text="Settings",
-            font=ctk.CTkFont(size=13, weight="bold"),
-        )
-        settings_label.pack(anchor="w", padx=8, pady=(8, 4))
-
-        fields = ctk.CTkFrame(settings_frame, fg_color="transparent")
-        fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
+        fields = ctk.CTkFrame(parent, fg_color="transparent")
+        fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(2, 6))
 
         self.create_custom_input_field(
-            fields, "Transmission Name:", self.transmission_data['name'],
+            fields, "Name:", self.transmission_data['name'],
             "Enter the name of the transmission",
         )
-        self.create_custom_input_field(
-            fields, "Transmission Cost ($):", self.transmission_data['cost'],
-            "Enter the cost of the transmission in dollars",
-        )
+        cost_type = ctk.CTkFrame(fields, fg_color="transparent")
+        cost_type.pack(fill=tk.X, pady=3)
+        cost_type.grid_columnconfigure(0, weight=1)
+        cost_type.grid_columnconfigure(1, weight=1)
 
-        type_frame = ctk.CTkFrame(fields, fg_color="transparent")
-        type_frame.pack(fill=tk.X, pady=5)
-        type_label = ctk.CTkLabel(type_frame, text="Transmission Type:")
-        type_label.pack(side=tk.LEFT, padx=(0, 8))
+        cost_cell = self._ctk_field_cell(
+            cost_type, "Cost ($):", self.transmission_data['cost'],
+            "Enter the cost of the transmission in dollars", entry_width=90,
+        )
+        cost_cell.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+
+        type_cell = ctk.CTkFrame(cost_type, fg_color="transparent")
+        type_cell.grid(row=0, column=1, sticky="ew", padx=(8, 0))
+        type_label = ctk.CTkLabel(type_cell, text="Type:")
+        type_label.pack(side=tk.LEFT, padx=(0, 6))
         type_combo = ctk.CTkOptionMenu(
-            type_frame,
+            type_cell,
             values=["Manual", "Automatic", "CVT", "PowerShift"],
             variable=self.transmission_data['type'],
+            width=120,
         )
-        type_combo.pack(side=tk.LEFT)
+        type_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
         Tooltip(type_combo, "Select the type of transmission")
 
-        self.create_custom_input_field(
-            fields, "Top Speed (km/h):", self.transmission_data['top_speed'],
-            "Enter the maximum speed of the vehicle in km/h",
-        )
-        self.create_custom_input_field(
-            fields, "Forward Gears:", self.transmission_data['num_forward'],
-            "Enter the number of forward gears",
-        )
-        self.create_custom_input_field(
-            fields, "Reverse Gears:", self.transmission_data['num_reverse'],
-            "Enter the number of reverse gears",
-        )
-
-        low_gear_check = ctk.CTkCheckBox(
+        self._ctk_field_row(
             fields,
-            text="Enable Low Gearing",
-            variable=self.transmission_data['enable_low_gearing'],
+            ("Top Speed:", self.transmission_data['top_speed'],
+             "Enter the maximum speed of the vehicle in km/h", 90),
+            ("Fwd Gears:", self.transmission_data['num_forward'],
+             "Enter the number of forward gears", 70),
         )
-        low_gear_check.pack(anchor="w", pady=(8, 4))
+        gear_row = ctk.CTkFrame(fields, fg_color="transparent")
+        gear_row.pack(fill=tk.X, pady=3)
+        gear_row.grid_columnconfigure(0, weight=1)
+        gear_row.grid_columnconfigure(1, weight=1)
+
+        rev_cell = self._ctk_field_cell(
+            gear_row, "Rev Gears:", self.transmission_data['num_reverse'],
+            "Enter the number of reverse gears", entry_width=70,
+        )
+        rev_cell.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+
+        boost_cell = ctk.CTkFrame(gear_row, fg_color="transparent")
+        boost_cell.grid(row=0, column=1, sticky="ew", padx=(8, 0))
+        low_gear_check = ctk.CTkCheckBox(
+            boost_cell,
+            text="Low Gearing",
+            variable=self.transmission_data['enable_low_gearing'],
+            width=110,
+        )
+        low_gear_check.pack(side=tk.LEFT, padx=(0, 8))
         Tooltip(
             low_gear_check,
             "Enable low gearing for enhanced torque output in first 25% of gears",
         )
-
-        boost_frame = ctk.CTkFrame(fields, fg_color="transparent")
-        boost_frame.pack(fill=tk.X, pady=5)
-        boost_label = ctk.CTkLabel(boost_frame, text="Low Gear Boost (%):")
-        boost_label.pack(side=tk.LEFT, padx=(0, 8))
+        boost_label = ctk.CTkLabel(boost_cell, text="Boost %:")
+        boost_label.pack(side=tk.LEFT, padx=(0, 6))
         boost_entry = ctk.CTkEntry(
-            boost_frame,
+            boost_cell,
             textvariable=self.transmission_data['low_gear_boost'],
-            width=100,
+            width=70,
         )
         boost_entry.pack(side=tk.LEFT)
         Tooltip(boost_entry, "Percentage boost for low gears (e.g., 25 for 25% boost)")
     
     def setup_standard_transmission_tab(self, parent):
-        """Set up transmission panel using standard Tkinter widgets."""
-        preset_frame = tk.LabelFrame(
-            parent, text="Presets",
-            bg=self.colors['bg'], fg=self.colors['fg'],
-            font=("Arial", 10, "bold"),
-        )
-        preset_frame.pack(fill=tk.X, padx=6, pady=5)
+        """Set up transmission panel using standard Tkinter widgets (compact paired fields)."""
+        preset_row = tk.Frame(parent, bg=self.colors['bg'])
+        preset_row.pack(fill=tk.X, padx=8, pady=(6, 4))
 
         preset_var = tk.StringVar()
         preset_combo = ttk.Combobox(
-            preset_frame, textvariable=preset_var,
+            preset_row, textvariable=preset_var,
             values=list(PresetManager.get_transmission_presets().keys()),
             state="readonly", width=28,
         )
-        preset_combo.pack(side=tk.LEFT, padx=8, pady=8)
+        preset_combo.pack(side=tk.LEFT, padx=(0, 6))
         self.transmission_preset_dropdown = preset_combo
 
         load_preset_btn = tk.Button(
-            preset_frame, text="Load",
+            preset_row, text="Load",
             command=lambda: self.load_transmission_preset(preset_var.get()),
             bg=self.colors['button_bg'], fg=self.colors['fg'],
             relief=tk.RAISED, borderwidth=1,
         )
-        load_preset_btn.pack(side=tk.LEFT, padx=5, pady=8)
+        load_preset_btn.pack(side=tk.LEFT)
 
-        settings_frame = tk.LabelFrame(
-            parent, text="Settings",
-            bg=self.colors['bg'], fg=self.colors['fg'],
-            font=("Arial", 10, "bold"),
-        )
-        settings_frame.pack(fill=tk.BOTH, expand=True, padx=6, pady=5)
-
-        fields = tk.Frame(settings_frame, bg=self.colors['bg'])
-        fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        fields = tk.Frame(parent, bg=self.colors['bg'])
+        fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(2, 6))
 
         self.create_input_field(
-            fields, "Transmission Name:", self.transmission_data['name'],
+            fields, "Name:", self.transmission_data['name'],
             "Enter the name of the transmission",
         )
-        self.create_input_field(
-            fields, "Transmission Cost ($):", self.transmission_data['cost'],
-            "Enter the cost of the transmission in dollars",
-        )
+        cost_type = tk.Frame(fields, bg=self.colors['bg'])
+        cost_type.pack(fill=tk.X, pady=3)
 
-        type_frame = tk.Frame(fields, bg=self.colors['bg'])
-        type_frame.pack(fill=tk.X, pady=5)
+        self.create_input_field(
+            cost_type, "Cost ($):", self.transmission_data['cost'],
+            "Enter the cost of the transmission in dollars",
+            entry_width=10, expand=False, fill_row=False,
+        )
         type_label = tk.Label(
-            type_frame, text="Transmission Type:",
+            cost_type, text="Type:",
             bg=self.colors['bg'], fg=self.colors['fg'],
         )
-        type_label.pack(side=tk.LEFT)
+        type_label.pack(side=tk.LEFT, padx=(12, 4))
         type_combo = ttk.Combobox(
-            type_frame, textvariable=self.transmission_data['type'],
+            cost_type, textvariable=self.transmission_data['type'],
             values=["Manual", "Automatic", "CVT", "PowerShift"],
-            state="readonly", width=15,
+            state="readonly", width=12,
         )
-        type_combo.pack(side=tk.LEFT, padx=5)
+        type_combo.pack(side=tk.LEFT)
         Tooltip(type_combo, "Select the type of transmission")
 
-        self.create_input_field(
-            fields, "Top Speed (km/h):", self.transmission_data['top_speed'],
-            "Enter the maximum speed of the vehicle in km/h",
+        self._tk_field_row(
+            fields,
+            ("Top Speed:", self.transmission_data['top_speed'],
+             "Enter the maximum speed of the vehicle in km/h", 10),
+            ("Fwd Gears:", self.transmission_data['num_forward'],
+             "Enter the number of forward gears", 6),
         )
-        self.create_input_field(
-            fields, "Forward Gears:", self.transmission_data['num_forward'],
-            "Enter the number of forward gears",
-        )
-        self.create_input_field(
-            fields, "Reverse Gears:", self.transmission_data['num_reverse'],
-            "Enter the number of reverse gears",
-        )
+        gear_row = tk.Frame(fields, bg=self.colors['bg'])
+        gear_row.pack(fill=tk.X, pady=3)
 
-        low_gear_frame = tk.Frame(fields, bg=self.colors['bg'])
-        low_gear_frame.pack(fill=tk.X, pady=5)
+        self.create_input_field(
+            gear_row, "Rev Gears:", self.transmission_data['num_reverse'],
+            "Enter the number of reverse gears",
+            entry_width=6, expand=False, fill_row=False,
+        )
         low_gear_check = tk.Checkbutton(
-            low_gear_frame, text="Enable Low Gearing",
+            gear_row, text="Low Gearing",
             variable=self.transmission_data['enable_low_gearing'],
             bg=self.colors['bg'], fg=self.colors['fg'],
             selectcolor=self.colors['input_bg'],
         )
-        low_gear_check.pack(side=tk.LEFT)
+        low_gear_check.pack(side=tk.LEFT, padx=(12, 6))
         Tooltip(
             low_gear_check,
             "Enable low gearing for enhanced torque output in first 25% of gears",
         )
-
-        boost_frame = tk.Frame(fields, bg=self.colors['bg'])
-        boost_frame.pack(fill=tk.X, pady=5)
         boost_label = tk.Label(
-            boost_frame, text="Low Gear Boost (%):",
+            gear_row, text="Boost %:",
             bg=self.colors['bg'], fg=self.colors['fg'],
         )
         boost_label.pack(side=tk.LEFT)
         boost_entry = tk.Entry(
-            boost_frame, textvariable=self.transmission_data['low_gear_boost'],
+            gear_row, textvariable=self.transmission_data['low_gear_boost'],
             bg=self.colors['input_bg'], fg=self.colors['fg'],
-            relief=tk.SOLID, borderwidth=1, width=10,
+            relief=tk.SOLID, borderwidth=1, width=6,
         )
-        boost_entry.pack(side=tk.LEFT, padx=5)
+        boost_entry.pack(side=tk.LEFT, padx=4)
         Tooltip(boost_entry, "Percentage boost for low gears (e.g., 25 for 25% boost)")
     
     def setup_output_tab(self, parent):
@@ -763,41 +725,9 @@ class FS25ConfigTool:
         )
         preview_label.pack(side=tk.LEFT)
 
-        text_frame = ctk.CTkFrame(preview_frame)
+        text_frame = ctk.CTkFrame(preview_frame, fg_color=self.colors['input_bg'])
         text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-        self.line_numbers = tk.Text(
-            text_frame,
-            bg=self.colors['bg'],
-            fg=self.colors['secondary_fg'],
-            font=("Consolas", 9),
-            width=4,
-            padx=5,
-            pady=5,
-            relief=tk.FLAT,
-            state=tk.DISABLED,
-        )
-
-        self.xml_text = tk.Text(
-            text_frame,
-            bg=self.colors['input_bg'],
-            fg=self.colors['fg'],
-            font=("Consolas", 9),
-            wrap=tk.NONE,
-            insertbackground=self.colors['fg'],
-            padx=5,
-            pady=5,
-        )
-
-        v_scrollbar = tk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self._on_scroll)
-        h_scrollbar = tk.Scrollbar(text_frame, orient=tk.HORIZONTAL, command=self.xml_text.xview)
-        self.xml_text.configure(yscrollcommand=self._on_scroll, xscrollcommand=h_scrollbar.set)
-
-        v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.line_numbers.pack(side=tk.LEFT, fill=tk.Y)
-        self.xml_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
+        self._build_xml_preview_area(text_frame, use_ctk=True)
         self.setup_xml_syntax_highlighting()
 
     def setup_standard_output_tab(self, parent):
@@ -888,6 +818,22 @@ class FS25ConfigTool:
 
         text_frame = tk.Frame(preview_frame, bg=self.colors['input_bg'])
         text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self._build_xml_preview_area(text_frame, use_ctk=False)
+        self.setup_xml_syntax_highlighting()
+    
+    def _build_xml_preview_area(self, text_frame, *, use_ctk: bool) -> None:
+        """Build themed XML preview with word wrap, line numbers, and auto-hiding v-scrollbar."""
+        self._xml_preview_frame = text_frame
+        self._v_scrollbar_visible = False
+        self._h_scrollbar_visible = False
+        self.h_scrollbar = None
+
+        # Grid keeps a reserved gutter so showing/hiding the vertical scrollbar doesn't jump text.
+        gutter = 16
+        text_frame.grid_columnconfigure(0, weight=0)  # line numbers
+        text_frame.grid_columnconfigure(1, weight=1)  # XML text
+        text_frame.grid_columnconfigure(2, weight=0, minsize=gutter)  # vertical scrollbar gutter
+        text_frame.grid_rowconfigure(0, weight=1)
 
         self.line_numbers = tk.Text(
             text_frame,
@@ -897,77 +843,262 @@ class FS25ConfigTool:
             width=4,
             padx=5,
             pady=5,
+            wrap=tk.NONE,
             relief=tk.FLAT,
+            borderwidth=0,
+            highlightthickness=0,
             state=tk.DISABLED,
         )
+        self.line_numbers.grid(row=0, column=0, sticky="ns")
 
         self.xml_text = tk.Text(
             text_frame,
             bg=self.colors['input_bg'],
             fg=self.colors['fg'],
             font=("Consolas", 9),
-            wrap=tk.NONE,
+            wrap=tk.WORD,
             insertbackground=self.colors['fg'],
             padx=5,
             pady=5,
+            relief=tk.FLAT,
+            borderwidth=0,
+            highlightthickness=0,
         )
+        self.xml_text.grid(row=0, column=1, sticky="nsew")
 
-        v_scrollbar = tk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self._on_scroll)
-        h_scrollbar = tk.Scrollbar(text_frame, orient=tk.HORIZONTAL, command=self.xml_text.xview)
-        self.xml_text.configure(yscrollcommand=self._on_scroll, xscrollcommand=h_scrollbar.set)
+        if use_ctk and CUSTOM_TKINTER_AVAILABLE:
+            self.v_scrollbar = ctk.CTkScrollbar(
+                text_frame,
+                orientation="vertical",
+                command=self._scroll_y,
+                width=gutter,
+            )
+        else:
+            self.v_scrollbar = ttk.Scrollbar(
+                text_frame,
+                orient=tk.VERTICAL,
+                command=self._scroll_y,
+                style="Preview.Vertical.TScrollbar",
+            )
 
-        v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.line_numbers.pack(side=tk.LEFT, fill=tk.Y)
-        self.xml_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.xml_text.configure(yscrollcommand=self._on_yview_changed)
+        self.xml_text.bind("<Configure>", self._on_preview_configure, add="+")
+        # Mouse wheel still works when scrollbars are hidden
+        self.xml_text.bind("<MouseWheel>", self._on_mousewheel, add="+")
+        self.xml_text.bind("<Button-4>", self._on_mousewheel, add="+")
+        self.xml_text.bind("<Button-5>", self._on_mousewheel, add="+")
 
-        self.setup_xml_syntax_highlighting()
-    
-    def create_input_field(self, parent, label_text, variable, tooltip_text):
-        """
-        Create a labeled input field with tooltip.
-        
-        Args:
-            parent: Parent widget
-            label_text: Text for the label
-            variable: Tkinter variable to bind to
-            tooltip_text: Tooltip text for the field
-        """
+    def _scroll_y(self, *args) -> None:
+        """Scrollbar/thumb command: scroll preview + line numbers together."""
+        try:
+            self.xml_text.yview(*args)
+            self.line_numbers.yview(*args)
+        except Exception:
+            pass
+
+    def _on_yview_changed(self, first: str, last: str) -> None:
+        """Update vertical scrollbar thumb and visibility from Text widget."""
+        try:
+            self.v_scrollbar.set(first, last)
+            self.line_numbers.yview_moveto(float(first))
+        except Exception:
+            pass
+        need = float(first) > 0.001 or float(last) < 0.999
+        self._set_v_scrollbar_visible(need)
+
+    def _on_xview_changed(self, first: str, last: str) -> None:
+        """Horizontal overflow callback (unused with word wrap)."""
+        return
+
+    def _set_v_scrollbar_visible(self, visible: bool) -> None:
+        if visible == self._v_scrollbar_visible:
+            return
+        self._v_scrollbar_visible = visible
+        if visible:
+            self.v_scrollbar.grid(row=0, column=2, sticky="ns")
+        else:
+            self.v_scrollbar.grid_remove()
+
+    def _set_h_scrollbar_visible(self, visible: bool) -> None:
+        """No horizontal scrollbar when word wrap is enabled."""
+        self._h_scrollbar_visible = False
+
+    def _refresh_scrollbar_visibility(self) -> None:
+        """Re-evaluate vertical scrollbar need after content or size changes."""
+        try:
+            self.xml_text.update_idletasks()
+            y0, y1 = self.xml_text.yview()
+            self._on_yview_changed(str(y0), str(y1))
+        except Exception:
+            pass
+
+    def _on_preview_configure(self, _event=None) -> None:
+        # Re-wrap can change display-line count; refresh gutter + scrollbar.
+        if getattr(self, "_updating_line_numbers", False):
+            return
+        self._update_line_numbers(preserve_scroll=True)
+
+    def _update_line_numbers(self, preserve_scroll: bool = False):
+        """Update line numbers; pad blank rows so wrapped display lines stay aligned."""
+        if getattr(self, "_updating_line_numbers", False):
+            return
+        self._updating_line_numbers = True
+        try:
+            y0, _y1 = self.xml_text.yview() if preserve_scroll else (0.0, 1.0)
+            line_count = int(self.xml_text.index('end-1c').split('.')[0])
+
+            self.line_numbers.config(state=tk.NORMAL)
+            self.line_numbers.delete(1.0, tk.END)
+
+            parts = []
+            for i in range(1, line_count + 1):
+                if i < line_count:
+                    result = self.xml_text.count(f"{i}.0", f"{i + 1}.0", "displaylines")
+                else:
+                    result = self.xml_text.count(f"{i}.0", "end", "displaylines")
+                display_lines = 1
+                if result is not None:
+                    display_lines = result[0] if isinstance(result, tuple) else int(result)
+                if display_lines < 1:
+                    display_lines = 1
+                parts.append(str(i))
+                for _ in range(display_lines - 1):
+                    parts.append("")
+
+            self.line_numbers.insert(tk.END, "\n".join(parts) + ("\n" if parts else ""))
+            self.line_numbers.config(state=tk.DISABLED)
+
+            if preserve_scroll:
+                self.xml_text.yview_moveto(y0)
+                self.line_numbers.yview_moveto(y0)
+            else:
+                self.xml_text.yview_moveto(0)
+                self.line_numbers.yview_moveto(0)
+            self._refresh_scrollbar_visibility()
+        except Exception:
+            pass
+        finally:
+            self._updating_line_numbers = False
+
+    def _on_mousewheel(self, event) -> None:
+        """Scroll XML preview with the mouse wheel (and keep line numbers synced)."""
+        try:
+            if getattr(event, "num", None) == 4:  # Linux scroll up
+                delta = -1
+            elif getattr(event, "num", None) == 5:  # Linux scroll down
+                delta = 1
+            else:
+                delta = -1 if event.delta > 0 else 1
+            self.xml_text.yview_scroll(delta, "units")
+            self.line_numbers.yview_scroll(delta, "units")
+            self._refresh_scrollbar_visibility()
+        except Exception:
+            pass
+        return "break"
+
+    def create_input_field(
+        self, parent, label_text, variable, tooltip_text,
+        *, entry_width=None, expand=True, fill_row=True, pady=3,
+    ):
+        """Create a labeled input field with tooltip (standard Tkinter)."""
         frame = tk.Frame(parent, bg=self.colors['bg'])
-        frame.pack(fill=tk.X, pady=5)
-        
-        label = tk.Label(frame, text=label_text, 
-                        bg=self.colors['bg'], fg=self.colors['fg'])
+        if fill_row:
+            frame.pack(fill=tk.X, pady=pady)
+        else:
+            frame.pack(side=tk.LEFT, pady=pady)
+
+        label = tk.Label(
+            frame, text=label_text,
+            bg=self.colors['bg'], fg=self.colors['fg'],
+        )
         label.pack(side=tk.LEFT)
-        
-        entry = tk.Entry(frame, textvariable=variable,
-                        bg=self.colors['input_bg'], fg=self.colors['fg'],
-                        relief=tk.SOLID, borderwidth=1)
-        entry.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
-        
+
+        entry = tk.Entry(
+            frame, textvariable=variable,
+            bg=self.colors['input_bg'], fg=self.colors['fg'],
+            relief=tk.SOLID, borderwidth=1,
+            width=entry_width if entry_width is not None else 20,
+        )
+        if expand and entry_width is None:
+            entry.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+        else:
+            entry.pack(side=tk.LEFT, padx=5)
+
         Tooltip(entry, tooltip_text)
-    
-    def create_custom_input_field(self, parent, label_text, variable, tooltip_text):
-        """
-        Create a labeled input field with tooltip using CustomTkinter.
-        
-        Args:
-            parent: Parent widget
-            label_text: Text for the label
-            variable: Tkinter variable to bind to
-            tooltip_text: Tooltip text for the field
-        """
-        frame = ctk.CTkFrame(parent)
-        frame.pack(fill=tk.X, pady=5)
-        
+        return frame
+
+    def create_custom_input_field(
+        self, parent, label_text, variable, tooltip_text,
+        *, entry_width=None, expand=True, pady=3,
+    ):
+        """Create a labeled input field with tooltip (CustomTkinter)."""
+        frame = ctk.CTkFrame(parent, fg_color="transparent")
+        frame.pack(fill=tk.X, pady=pady)
+
         label = ctk.CTkLabel(frame, text=label_text)
-        label.pack(side=tk.LEFT, padx=5)
-        
-        entry = ctk.CTkEntry(frame, textvariable=variable)
-        entry.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
-        
+        label.pack(side=tk.LEFT, padx=(0, 6))
+
+        entry_kwargs = {"textvariable": variable}
+        if entry_width is not None:
+            entry_kwargs["width"] = entry_width
+        entry = ctk.CTkEntry(frame, **entry_kwargs)
+        if expand and entry_width is None:
+            entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        else:
+            entry.pack(side=tk.LEFT)
+
         Tooltip(entry, tooltip_text)
-    
+        return frame
+
+    def _ctk_field_cell(self, parent, label_text, variable, tooltip_text, *, entry_width=90):
+        """Build an unplaced labeled entry cell for grid layouts."""
+        cell = ctk.CTkFrame(parent, fg_color="transparent")
+        label = ctk.CTkLabel(cell, text=label_text)
+        label.pack(side=tk.LEFT, padx=(0, 6))
+        entry = ctk.CTkEntry(cell, textvariable=variable, width=entry_width)
+        entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        Tooltip(entry, tooltip_text)
+        return cell
+
+    def _ctk_field_row(self, parent, left_spec, right_spec=None):
+        """Pack a one- or two-column compact field row (CustomTkinter)."""
+        row = ctk.CTkFrame(parent, fg_color="transparent")
+        row.pack(fill=tk.X, pady=3)
+        row.grid_columnconfigure(0, weight=1)
+        row.grid_columnconfigure(1, weight=1 if right_spec else 0)
+
+        left_label, left_var, left_tip, left_width = left_spec
+        left_cell = self._ctk_field_cell(
+            row, left_label, left_var, left_tip, entry_width=left_width,
+        )
+        left_cell.grid(row=0, column=0, sticky="ew", padx=(0, 8 if right_spec else 0))
+
+        if right_spec is not None:
+            right_label, right_var, right_tip, right_width = right_spec
+            right_cell = self._ctk_field_cell(
+                row, right_label, right_var, right_tip, entry_width=right_width,
+            )
+            right_cell.grid(row=0, column=1, sticky="ew", padx=(8, 0))
+
+    def _tk_field_row(self, parent, left_spec, right_spec=None):
+        """Pack a one- or two-column compact field row (standard Tkinter)."""
+        row = tk.Frame(parent, bg=self.colors['bg'])
+        row.pack(fill=tk.X, pady=3)
+
+        left_label, left_var, left_tip, left_width = left_spec
+        self.create_input_field(
+            row, left_label, left_var, left_tip,
+            entry_width=left_width, expand=False, fill_row=False,
+        )
+        if right_spec is not None:
+            right_label, right_var, right_tip, right_width = right_spec
+            spacer = tk.Frame(row, bg=self.colors['bg'], width=16)
+            spacer.pack(side=tk.LEFT)
+            self.create_input_field(
+                row, right_label, right_var, right_tip,
+                entry_width=right_width, expand=False, fill_row=False,
+            )
+
     def apply_dark_theme(self):
         """Apply dark theme styling to the application."""
         style = ttk.Style()
@@ -982,6 +1113,32 @@ class FS25ConfigTool:
         style.configure('TCombobox', fieldbackground=self.colors['input_bg'],
                        background=self.colors['input_bg'], foreground=self.colors['fg'])
         style.map('TCombobox', fieldbackground=[('readonly', self.colors['input_bg'])])
+
+        # Themed preview scrollbars (Tk fallback path)
+        style.configure(
+            "Preview.Vertical.TScrollbar",
+            background=self.colors['button_bg'],
+            troughcolor=self.colors['input_bg'],
+            bordercolor=self.colors['border'],
+            arrowcolor=self.colors['fg'],
+            relief="flat",
+        )
+        style.map(
+            "Preview.Vertical.TScrollbar",
+            background=[("active", self.colors['button_hover'])],
+        )
+        style.configure(
+            "Preview.Horizontal.TScrollbar",
+            background=self.colors['button_bg'],
+            troughcolor=self.colors['input_bg'],
+            bordercolor=self.colors['border'],
+            arrowcolor=self.colors['fg'],
+            relief="flat",
+        )
+        style.map(
+            "Preview.Horizontal.TScrollbar",
+            background=[("active", self.colors['button_hover'])],
+        )
     
     def setup_xml_syntax_highlighting(self):
         """Set up XML syntax highlighting tags and colors."""
@@ -1096,38 +1253,6 @@ class FS25ConfigTool:
                 attr_value_start = f"1.0+{attr_start + attr_match.group(1).__len__() + 2}c"  # +2 for ="
                 attr_value_end = f"1.0+{attr_end - 1}c"  # -1 for closing quote
                 self.xml_text.tag_add('xml_value', attr_value_start, attr_value_end)
-    
-    def _update_line_numbers(self):
-        """Update the line numbers display."""
-        try:
-            # Get the number of lines
-            line_count = int(self.xml_text.index('end-1c').split('.')[0])
-            
-            # Clear existing line numbers
-            self.line_numbers.config(state=tk.NORMAL)
-            self.line_numbers.delete(1.0, tk.END)
-            
-            # Add line numbers
-            for i in range(1, line_count + 1):
-                self.line_numbers.insert(tk.END, f"{i}\n")
-            
-            self.line_numbers.config(state=tk.DISABLED)
-            
-            # Sync scrolling
-            self.xml_text.yview_moveto(0)
-            self.line_numbers.yview_moveto(0)
-            
-        except Exception:
-            pass
-    
-    def _on_scroll(self, *args):
-        """Handle scrolling synchronization between text and line numbers."""
-        try:
-            # Update both text widgets
-            self.xml_text.yview(*args)
-            self.line_numbers.yview(*args)
-        except Exception:
-            pass
     
     def load_engine_preset(self, preset_name):
         """Load engine preset data into the form."""
