@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Issue templates for bug reports and feature requests
 - Real Windows installer via Inno Setup (`packaging/windows/setup.iss`) — single Setup `.exe`
 - In-app **About** dialog with [Buy Me a Coffee](https://www.buymeacoffee.com/caveman117) support link
+- Single-page layout: engine (left), transmission (right), XML preview/actions (bottom) — no tab switching
 
 ### Changed
 

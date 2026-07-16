@@ -85,7 +85,8 @@ class FS25ConfigTool:
         """
         self.root = root
         self.root.title(f"FS25 Engine and Transmission Config Tool v{__version__}")
-        self.root.geometry("1200x800")
+        self.root.geometry("1400x900")
+        self.root.minsize(1100, 700)
         
         # Configure custom styling
         if CUSTOM_TKINTER_AVAILABLE:
@@ -174,14 +175,16 @@ class FS25ConfigTool:
             self.setup_standard_gui()
     
     def setup_custom_gui(self):
-        """Set up GUI using CustomTkinter widgets."""
-        # Main container
+        """Set up a single-page GUI: engine | transmission, XML output below."""
         main_frame = ctk.CTkFrame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
+        main_frame.grid_columnconfigure(0, weight=1)
+        main_frame.grid_rowconfigure(1, weight=2)  # config panels
+        main_frame.grid_rowconfigure(2, weight=3)  # XML output
+
         # Title row with About
         header = ctk.CTkFrame(main_frame, fg_color="transparent")
-        header.pack(fill=tk.X, padx=10, pady=(10, 20))
+        header.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 8))
         header.grid_columnconfigure(0, weight=1)
 
         title_label = ctk.CTkLabel(
@@ -199,32 +202,37 @@ class FS25ConfigTool:
         )
         about_btn.grid(row=0, column=1, sticky="e", padx=(10, 0))
         Tooltip(about_btn, "About this app and support links")
-        
-        # Create notebook for tabs
-        self.notebook = ctk.CTkTabview(main_frame)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Engine tab
-        self.notebook.add("Engine Settings")
-        self.setup_engine_tab(self.notebook.tab("Engine Settings"))
-        
-        # Transmission tab
-        self.notebook.add("Transmission Settings")
-        self.setup_transmission_tab(self.notebook.tab("Transmission Settings"))
-        
-        # Output tab
-        self.notebook.add("Output")
-        self.setup_output_tab(self.notebook.tab("Output"))
-    
+
+        # Engine (left) + Transmission (right)
+        config_row = ctk.CTkFrame(main_frame, fg_color="transparent")
+        config_row.grid(row=1, column=0, sticky="nsew", padx=6, pady=(0, 6))
+        config_row.grid_columnconfigure(0, weight=1)
+        config_row.grid_columnconfigure(1, weight=1)
+        config_row.grid_rowconfigure(0, weight=1)
+
+        engine_panel = ctk.CTkScrollableFrame(config_row, label_text="Engine")
+        engine_panel.grid(row=0, column=0, sticky="nsew", padx=(4, 4), pady=4)
+        self.setup_engine_tab(engine_panel)
+
+        transmission_panel = ctk.CTkScrollableFrame(config_row, label_text="Transmission")
+        transmission_panel.grid(row=0, column=1, sticky="nsew", padx=(4, 4), pady=4)
+        self.setup_transmission_tab(transmission_panel)
+
+        # Generated XML + actions (bottom)
+        output_panel = ctk.CTkFrame(main_frame)
+        output_panel.grid(row=2, column=0, sticky="nsew", padx=6, pady=(0, 6))
+        self.setup_output_tab(output_panel)
+
     def setup_standard_gui(self):
-        """Set up GUI using standard Tkinter widgets."""
-        # Main container
+        """Set up a single-page GUI using standard Tkinter widgets."""
         main_frame = tk.Frame(self.root, bg=self.colors['bg'])
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Title row with About
+        main_frame.grid_columnconfigure(0, weight=1)
+        main_frame.grid_rowconfigure(1, weight=2)
+        main_frame.grid_rowconfigure(2, weight=3)
+
         header = tk.Frame(main_frame, bg=self.colors['bg'])
-        header.pack(fill=tk.X, pady=(0, 20))
+        header.grid(row=0, column=0, sticky="ew", pady=(0, 8))
 
         title_label = tk.Label(
             header,
@@ -244,25 +252,36 @@ class FS25ConfigTool:
         )
         about_btn.pack(side=tk.RIGHT)
         Tooltip(about_btn, "About this app and support links")
-        
-        # Create notebook for tabs
-        notebook = ttk.Notebook(main_frame)
-        notebook.pack(fill=tk.BOTH, expand=True)
-        
-        # Engine tab
-        engine_frame = tk.Frame(notebook, bg=self.colors['bg'])
-        notebook.add(engine_frame, text="Engine Settings")
-        self.setup_engine_tab(engine_frame)
-        
-        # Transmission tab
-        transmission_frame = tk.Frame(notebook, bg=self.colors['bg'])
-        notebook.add(transmission_frame, text="Transmission Settings")
-        self.setup_transmission_tab(transmission_frame)
-        
-        # Output tab
-        output_frame = tk.Frame(notebook, bg=self.colors['bg'])
-        notebook.add(output_frame, text="Output")
-        self.setup_output_tab(output_frame)
+
+        config_row = tk.Frame(main_frame, bg=self.colors['bg'])
+        config_row.grid(row=1, column=0, sticky="nsew", pady=(0, 6))
+        config_row.grid_columnconfigure(0, weight=1)
+        config_row.grid_columnconfigure(1, weight=1)
+        config_row.grid_rowconfigure(0, weight=1)
+
+        engine_panel = tk.LabelFrame(
+            config_row,
+            text="Engine",
+            bg=self.colors['bg'],
+            fg=self.colors['fg'],
+            font=("Arial", 10, "bold"),
+        )
+        engine_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
+        self.setup_engine_tab(engine_panel)
+
+        transmission_panel = tk.LabelFrame(
+            config_row,
+            text="Transmission",
+            bg=self.colors['bg'],
+            fg=self.colors['fg'],
+            font=("Arial", 10, "bold"),
+        )
+        transmission_panel.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
+        self.setup_transmission_tab(transmission_panel)
+
+        output_panel = tk.Frame(main_frame, bg=self.colors['bg'])
+        output_panel.grid(row=2, column=0, sticky="nsew")
+        self.setup_output_tab(output_panel)
     
     def setup_engine_tab(self, parent):
         """Set up the engine configuration tab."""
@@ -272,144 +291,162 @@ class FS25ConfigTool:
             self.setup_standard_engine_tab(parent)
     
     def setup_custom_engine_tab(self, parent):
-        """Set up engine tab using CustomTkinter widgets."""
-        # Engine presets frame
+        """Set up engine panel using CustomTkinter widgets."""
         preset_frame = ctk.CTkFrame(parent)
-        preset_frame.pack(fill=tk.X, padx=10, pady=5)
-        
-        preset_label = ctk.CTkLabel(preset_frame, text="Engine Presets", 
-                                   font=ctk.CTkFont(size=14, weight="bold"))
-        preset_label.pack(pady=5)
-        
-        preset_var = tk.StringVar()
-        preset_combo = ctk.CTkOptionMenu(preset_frame, 
-                                        values=list(PresetManager.get_engine_presets().keys()),
-                                        command=self.load_engine_preset)
-        preset_combo.pack(side=tk.LEFT, padx=10, pady=10)
-        
-        # Store reference for refresh functionality
+        preset_frame.pack(fill=tk.X, padx=6, pady=5)
+
+        preset_label = ctk.CTkLabel(
+            preset_frame,
+            text="Presets",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        )
+        preset_label.pack(anchor="w", padx=8, pady=(6, 2))
+
+        preset_row = ctk.CTkFrame(preset_frame, fg_color="transparent")
+        preset_row.pack(fill=tk.X, padx=6, pady=(0, 6))
+
+        preset_combo = ctk.CTkOptionMenu(
+            preset_row,
+            values=list(PresetManager.get_engine_presets().keys()),
+            command=self.load_engine_preset,
+        )
+        preset_combo.pack(side=tk.LEFT, padx=(2, 6), pady=4)
         self.engine_preset_dropdown = preset_combo
-        
-        load_preset_btn = ctk.CTkButton(preset_frame, text="Load Preset",
-                                       command=lambda: self.load_engine_preset(preset_var.get()))
-        load_preset_btn.pack(side=tk.LEFT, padx=5, pady=10)
-        
-        # Engine settings frame
+
+        load_preset_btn = ctk.CTkButton(
+            preset_row,
+            text="Load",
+            width=70,
+            command=lambda: self.load_engine_preset(preset_combo.get()),
+        )
+        load_preset_btn.pack(side=tk.LEFT, padx=2, pady=4)
+
         settings_frame = ctk.CTkFrame(parent)
-        settings_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-        
-        settings_label = ctk.CTkLabel(settings_frame, text="Engine Settings",
-                                     font=ctk.CTkFont(size=16, weight="bold"))
-        settings_label.pack(pady=10)
-        
-        # Create two columns
-        left_frame = ctk.CTkFrame(settings_frame)
-        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        right_frame = ctk.CTkFrame(settings_frame)
-        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Left column inputs
-        self.create_custom_input_field(left_frame, "Engine Name:", self.engine_data['name'],
-                                     "Enter the name of the engine")
-        
-        self.create_custom_input_field(left_frame, "Engine Cost ($):", self.engine_data['cost'],
-                                     "Enter the cost of the engine in dollars")
-        
-        self.create_custom_input_field(left_frame, "Horsepower (HP):", self.engine_data['horsepower'],
-                                     "Enter the engine's rated horsepower. Used to calculate torque curve")
-        
-        self.create_custom_input_field(left_frame, "Minimum RPM:", self.engine_data['min_rpm'],
-                                     "Enter the minimum RPM of the engine")
-        
-        # Right column inputs
-        self.create_custom_input_field(right_frame, "Maximum RPM:", self.engine_data['max_rpm'],
-                                     "Enter the maximum RPM of the engine (default: 3500)")
-        
-        self.create_custom_input_field(right_frame, "Fuel Usage Scale:", self.engine_data['fuel_usage_scale'],
-                                     "Enter the fuel usage scale factor (default: 1.0)")
-        
-        # Turbocharged checkbox
-        turbo_frame = ctk.CTkFrame(right_frame)
-        turbo_frame.pack(fill=tk.X, pady=5)
-        
-        turbo_check = ctk.CTkCheckBox(turbo_frame, text="Turbocharged",
-                                     variable=self.engine_data['turbocharged'])
-        turbo_check.pack(pady=5)
-        
+        settings_frame.pack(fill=tk.BOTH, expand=True, padx=6, pady=5)
+
+        settings_label = ctk.CTkLabel(
+            settings_frame,
+            text="Settings",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        )
+        settings_label.pack(anchor="w", padx=8, pady=(8, 4))
+
+        fields = ctk.CTkFrame(settings_frame, fg_color="transparent")
+        fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
+
+        self.create_custom_input_field(
+            fields, "Engine Name:", self.engine_data['name'],
+            "Enter the name of the engine",
+        )
+        self.create_custom_input_field(
+            fields, "Engine Cost ($):", self.engine_data['cost'],
+            "Enter the cost of the engine in dollars",
+        )
+        self.create_custom_input_field(
+            fields, "Horsepower (HP):", self.engine_data['horsepower'],
+            "Enter the engine's rated horsepower. Used to calculate torque curve",
+        )
+        self.create_custom_input_field(
+            fields, "Minimum RPM:", self.engine_data['min_rpm'],
+            "Enter the minimum RPM of the engine",
+        )
+        self.create_custom_input_field(
+            fields, "Maximum RPM:", self.engine_data['max_rpm'],
+            "Enter the maximum RPM of the engine (default: 3500)",
+        )
+        self.create_custom_input_field(
+            fields, "Fuel Usage Scale:", self.engine_data['fuel_usage_scale'],
+            "Enter the fuel usage scale factor (default: 1.0)",
+        )
+
+        turbo_check = ctk.CTkCheckBox(
+            fields,
+            text="Turbocharged",
+            variable=self.engine_data['turbocharged'],
+        )
+        turbo_check.pack(anchor="w", pady=8)
         Tooltip(turbo_check, "Check if the engine is turbocharged. Affects torque curve generation")
     
     def setup_standard_engine_tab(self, parent):
-        """Set up engine tab using standard Tkinter widgets."""
-        # Engine presets frame
-        preset_frame = tk.LabelFrame(parent, text="Engine Presets", 
-                                   bg=self.colors['bg'], fg=self.colors['fg'],
-                                   font=("Arial", 10, "bold"))
-        preset_frame.pack(fill=tk.X, padx=10, pady=5)
-        
+        """Set up engine panel using standard Tkinter widgets."""
+        preset_frame = tk.LabelFrame(
+            parent, text="Presets",
+            bg=self.colors['bg'], fg=self.colors['fg'],
+            font=("Arial", 10, "bold"),
+        )
+        preset_frame.pack(fill=tk.X, padx=6, pady=5)
+
         preset_var = tk.StringVar()
-        preset_combo = ttk.Combobox(preset_frame, textvariable=preset_var,
-                                   values=list(PresetManager.get_engine_presets().keys()),
-                                   state="readonly", width=30)
-        preset_combo.pack(side=tk.LEFT, padx=10, pady=10)
-        preset_combo.bind('<<ComboboxSelected>>', 
-                         lambda e: self.load_engine_preset(preset_var.get()))
-        
-        # Store reference for refresh functionality
+        preset_combo = ttk.Combobox(
+            preset_frame, textvariable=preset_var,
+            values=list(PresetManager.get_engine_presets().keys()),
+            state="readonly", width=28,
+        )
+        preset_combo.pack(side=tk.LEFT, padx=8, pady=8)
+        preset_combo.bind(
+            '<<ComboboxSelected>>',
+            lambda e: self.load_engine_preset(preset_var.get()),
+        )
         self.engine_preset_dropdown = preset_combo
-        
-        load_preset_btn = tk.Button(preset_frame, text="Load Preset",
-                                  command=lambda: self.load_engine_preset(preset_var.get()),
-                                  bg=self.colors['button_bg'], fg=self.colors['fg'],
-                                  relief=tk.RAISED, borderwidth=1)
-        load_preset_btn.pack(side=tk.LEFT, padx=5, pady=10)
-        
-        # Engine settings frame
-        settings_frame = tk.LabelFrame(parent, text="Engine Settings",
-                                     bg=self.colors['bg'], fg=self.colors['fg'],
-                                     font=("Arial", 10, "bold"))
-        settings_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-        
-        # Create two columns
-        left_frame = tk.Frame(settings_frame, bg=self.colors['bg'])
-        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        right_frame = tk.Frame(settings_frame, bg=self.colors['bg'])
-        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Left column inputs
-        self.create_input_field(left_frame, "Engine Name:", self.engine_data['name'],
-                              "Enter the name of the engine")
-        
-        self.create_input_field(left_frame, "Engine Cost ($):", self.engine_data['cost'],
-                              "Enter the cost of the engine in dollars")
-        
-        self.create_input_field(left_frame, "Horsepower (HP):", self.engine_data['horsepower'],
-                              "Enter the engine's rated horsepower. Used to calculate torque curve")
-        
-        self.create_input_field(left_frame, "Minimum RPM:", self.engine_data['min_rpm'],
-                              "Enter the minimum RPM of the engine")
-        
-        # Right column inputs
-        self.create_input_field(right_frame, "Maximum RPM:", self.engine_data['max_rpm'],
-                              "Enter the maximum RPM of the engine (default: 3500)")
-        
-        self.create_input_field(right_frame, "Fuel Usage Scale:", self.engine_data['fuel_usage_scale'],
-                              "Enter the fuel usage scale factor (default: 1.0)")
-        
-        # Turbocharged checkbox
-        turbo_frame = tk.Frame(right_frame, bg=self.colors['bg'])
+
+        load_preset_btn = tk.Button(
+            preset_frame, text="Load",
+            command=lambda: self.load_engine_preset(preset_var.get()),
+            bg=self.colors['button_bg'], fg=self.colors['fg'],
+            relief=tk.RAISED, borderwidth=1,
+        )
+        load_preset_btn.pack(side=tk.LEFT, padx=5, pady=8)
+
+        settings_frame = tk.LabelFrame(
+            parent, text="Settings",
+            bg=self.colors['bg'], fg=self.colors['fg'],
+            font=("Arial", 10, "bold"),
+        )
+        settings_frame.pack(fill=tk.BOTH, expand=True, padx=6, pady=5)
+
+        fields = tk.Frame(settings_frame, bg=self.colors['bg'])
+        fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+
+        self.create_input_field(
+            fields, "Engine Name:", self.engine_data['name'],
+            "Enter the name of the engine",
+        )
+        self.create_input_field(
+            fields, "Engine Cost ($):", self.engine_data['cost'],
+            "Enter the cost of the engine in dollars",
+        )
+        self.create_input_field(
+            fields, "Horsepower (HP):", self.engine_data['horsepower'],
+            "Enter the engine's rated horsepower. Used to calculate torque curve",
+        )
+        self.create_input_field(
+            fields, "Minimum RPM:", self.engine_data['min_rpm'],
+            "Enter the minimum RPM of the engine",
+        )
+        self.create_input_field(
+            fields, "Maximum RPM:", self.engine_data['max_rpm'],
+            "Enter the maximum RPM of the engine (default: 3500)",
+        )
+        self.create_input_field(
+            fields, "Fuel Usage Scale:", self.engine_data['fuel_usage_scale'],
+            "Enter the fuel usage scale factor (default: 1.0)",
+        )
+
+        turbo_frame = tk.Frame(fields, bg=self.colors['bg'])
         turbo_frame.pack(fill=tk.X, pady=5)
-        
-        turbo_label = tk.Label(turbo_frame, text="Turbocharged:", 
-                             bg=self.colors['bg'], fg=self.colors['fg'])
+
+        turbo_label = tk.Label(
+            turbo_frame, text="Turbocharged:",
+            bg=self.colors['bg'], fg=self.colors['fg'],
+        )
         turbo_label.pack(side=tk.LEFT)
-        
-        turbo_check = tk.Checkbutton(turbo_frame, variable=self.engine_data['turbocharged'],
-                                   bg=self.colors['bg'], fg=self.colors['fg'],
-                                   selectcolor=self.colors['input_bg'])
+
+        turbo_check = tk.Checkbutton(
+            turbo_frame, variable=self.engine_data['turbocharged'],
+            bg=self.colors['bg'], fg=self.colors['fg'],
+            selectcolor=self.colors['input_bg'],
+        )
         turbo_check.pack(side=tk.LEFT, padx=5)
-        
         Tooltip(turbo_check, "Check if the engine is turbocharged. Affects torque curve generation")
     
     def setup_transmission_tab(self, parent):
@@ -420,187 +457,206 @@ class FS25ConfigTool:
             self.setup_standard_transmission_tab(parent)
     
     def setup_custom_transmission_tab(self, parent):
-        """Set up transmission tab using CustomTkinter widgets."""
-        # Transmission presets frame
+        """Set up transmission panel using CustomTkinter widgets."""
         preset_frame = ctk.CTkFrame(parent)
-        preset_frame.pack(fill=tk.X, padx=10, pady=5)
-        
-        preset_label = ctk.CTkLabel(preset_frame, text="Transmission Presets", 
-                                   font=ctk.CTkFont(size=14, weight="bold"))
-        preset_label.pack(pady=5)
-        
-        preset_var = tk.StringVar()
-        preset_combo = ctk.CTkOptionMenu(preset_frame, 
-                                        values=list(PresetManager.get_transmission_presets().keys()),
-                                        command=self.load_transmission_preset)
-        preset_combo.pack(side=tk.LEFT, padx=10, pady=10)
-        
-        # Store reference for refresh functionality
+        preset_frame.pack(fill=tk.X, padx=6, pady=5)
+
+        preset_label = ctk.CTkLabel(
+            preset_frame,
+            text="Presets",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        )
+        preset_label.pack(anchor="w", padx=8, pady=(6, 2))
+
+        preset_row = ctk.CTkFrame(preset_frame, fg_color="transparent")
+        preset_row.pack(fill=tk.X, padx=6, pady=(0, 6))
+
+        preset_combo = ctk.CTkOptionMenu(
+            preset_row,
+            values=list(PresetManager.get_transmission_presets().keys()),
+            command=self.load_transmission_preset,
+        )
+        preset_combo.pack(side=tk.LEFT, padx=(2, 6), pady=4)
         self.transmission_preset_dropdown = preset_combo
-        
-        load_preset_btn = ctk.CTkButton(preset_frame, text="Load Preset",
-                                       command=lambda: self.load_transmission_preset(preset_var.get()))
-        load_preset_btn.pack(side=tk.LEFT, padx=5, pady=10)
-        
-        # Transmission settings frame
+
+        load_preset_btn = ctk.CTkButton(
+            preset_row,
+            text="Load",
+            width=70,
+            command=lambda: self.load_transmission_preset(preset_combo.get()),
+        )
+        load_preset_btn.pack(side=tk.LEFT, padx=2, pady=4)
+
         settings_frame = ctk.CTkFrame(parent)
-        settings_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-        
-        settings_label = ctk.CTkLabel(settings_frame, text="Transmission Settings",
-                                     font=ctk.CTkFont(size=16, weight="bold"))
-        settings_label.pack(pady=10)
-        
-        # Create two columns
-        left_frame = ctk.CTkFrame(settings_frame)
-        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        right_frame = ctk.CTkFrame(settings_frame)
-        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Left column inputs
-        self.create_custom_input_field(left_frame, "Transmission Name:", self.transmission_data['name'],
-                                     "Enter the name of the transmission")
-        
-        self.create_custom_input_field(left_frame, "Transmission Cost ($):", self.transmission_data['cost'],
-                                     "Enter the cost of the transmission in dollars")
-        
-        # Transmission type dropdown
-        type_frame = ctk.CTkFrame(left_frame)
+        settings_frame.pack(fill=tk.BOTH, expand=True, padx=6, pady=5)
+
+        settings_label = ctk.CTkLabel(
+            settings_frame,
+            text="Settings",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        )
+        settings_label.pack(anchor="w", padx=8, pady=(8, 4))
+
+        fields = ctk.CTkFrame(settings_frame, fg_color="transparent")
+        fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
+
+        self.create_custom_input_field(
+            fields, "Transmission Name:", self.transmission_data['name'],
+            "Enter the name of the transmission",
+        )
+        self.create_custom_input_field(
+            fields, "Transmission Cost ($):", self.transmission_data['cost'],
+            "Enter the cost of the transmission in dollars",
+        )
+
+        type_frame = ctk.CTkFrame(fields, fg_color="transparent")
         type_frame.pack(fill=tk.X, pady=5)
-        
         type_label = ctk.CTkLabel(type_frame, text="Transmission Type:")
-        type_label.pack(side=tk.LEFT, padx=5)
-        
-        type_combo = ctk.CTkOptionMenu(type_frame, 
-                                      values=["Manual", "Automatic", "CVT", "PowerShift"],
-                                      variable=self.transmission_data['type'])
-        type_combo.pack(side=tk.LEFT, padx=5)
-        
+        type_label.pack(side=tk.LEFT, padx=(0, 8))
+        type_combo = ctk.CTkOptionMenu(
+            type_frame,
+            values=["Manual", "Automatic", "CVT", "PowerShift"],
+            variable=self.transmission_data['type'],
+        )
+        type_combo.pack(side=tk.LEFT)
         Tooltip(type_combo, "Select the type of transmission")
-        
-        self.create_custom_input_field(left_frame, "Top Speed (km/h):", self.transmission_data['top_speed'],
-                                     "Enter the maximum speed of the vehicle in km/h")
-        
-        # Right column inputs
-        self.create_custom_input_field(right_frame, "Forward Gears:", self.transmission_data['num_forward'],
-                                     "Enter the number of forward gears")
-        
-        self.create_custom_input_field(right_frame, "Reverse Gears:", self.transmission_data['num_reverse'],
-                                     "Enter the number of reverse gears")
-        
-        # Low gearing options
-        low_gear_frame = ctk.CTkFrame(right_frame)
-        low_gear_frame.pack(fill=tk.X, pady=5)
-        
-        low_gear_check = ctk.CTkCheckBox(low_gear_frame, text="Enable Low Gearing",
-                                        variable=self.transmission_data['enable_low_gearing'])
-        low_gear_check.pack(pady=5)
-        
-        Tooltip(low_gear_check, "Enable low gearing for enhanced torque output in first 25% of gears")
-        
-        boost_frame = ctk.CTkFrame(right_frame)
+
+        self.create_custom_input_field(
+            fields, "Top Speed (km/h):", self.transmission_data['top_speed'],
+            "Enter the maximum speed of the vehicle in km/h",
+        )
+        self.create_custom_input_field(
+            fields, "Forward Gears:", self.transmission_data['num_forward'],
+            "Enter the number of forward gears",
+        )
+        self.create_custom_input_field(
+            fields, "Reverse Gears:", self.transmission_data['num_reverse'],
+            "Enter the number of reverse gears",
+        )
+
+        low_gear_check = ctk.CTkCheckBox(
+            fields,
+            text="Enable Low Gearing",
+            variable=self.transmission_data['enable_low_gearing'],
+        )
+        low_gear_check.pack(anchor="w", pady=(8, 4))
+        Tooltip(
+            low_gear_check,
+            "Enable low gearing for enhanced torque output in first 25% of gears",
+        )
+
+        boost_frame = ctk.CTkFrame(fields, fg_color="transparent")
         boost_frame.pack(fill=tk.X, pady=5)
-        
         boost_label = ctk.CTkLabel(boost_frame, text="Low Gear Boost (%):")
-        boost_label.pack(side=tk.LEFT, padx=5)
-        
-        boost_entry = ctk.CTkEntry(boost_frame, textvariable=self.transmission_data['low_gear_boost'], width=100)
-        boost_entry.pack(side=tk.LEFT, padx=5)
-        
+        boost_label.pack(side=tk.LEFT, padx=(0, 8))
+        boost_entry = ctk.CTkEntry(
+            boost_frame,
+            textvariable=self.transmission_data['low_gear_boost'],
+            width=100,
+        )
+        boost_entry.pack(side=tk.LEFT)
         Tooltip(boost_entry, "Percentage boost for low gears (e.g., 25 for 25% boost)")
     
     def setup_standard_transmission_tab(self, parent):
-        """Set up transmission tab using standard Tkinter widgets."""
-        # Transmission presets frame
-        preset_frame = tk.LabelFrame(parent, text="Transmission Presets",
-                                   bg=self.colors['bg'], fg=self.colors['fg'],
-                                   font=("Arial", 10, "bold"))
-        preset_frame.pack(fill=tk.X, padx=10, pady=5)
-        
+        """Set up transmission panel using standard Tkinter widgets."""
+        preset_frame = tk.LabelFrame(
+            parent, text="Presets",
+            bg=self.colors['bg'], fg=self.colors['fg'],
+            font=("Arial", 10, "bold"),
+        )
+        preset_frame.pack(fill=tk.X, padx=6, pady=5)
+
         preset_var = tk.StringVar()
-        preset_combo = ttk.Combobox(preset_frame, textvariable=preset_var,
-                                   values=list(PresetManager.get_transmission_presets().keys()),
-                                   state="readonly", width=30)
-        preset_combo.pack(side=tk.LEFT, padx=10, pady=10)
-        
-        # Store reference for refresh functionality
+        preset_combo = ttk.Combobox(
+            preset_frame, textvariable=preset_var,
+            values=list(PresetManager.get_transmission_presets().keys()),
+            state="readonly", width=28,
+        )
+        preset_combo.pack(side=tk.LEFT, padx=8, pady=8)
         self.transmission_preset_dropdown = preset_combo
-        
-        load_preset_btn = tk.Button(preset_frame, text="Load Preset",
-                                  command=lambda: self.load_transmission_preset(preset_var.get()),
-                                  bg=self.colors['button_bg'], fg=self.colors['fg'],
-                                  relief=tk.RAISED, borderwidth=1)
-        load_preset_btn.pack(side=tk.LEFT, padx=5, pady=10)
-        
-        # Transmission settings frame
-        settings_frame = tk.LabelFrame(parent, text="Transmission Settings",
-                                     bg=self.colors['bg'], fg=self.colors['fg'],
-                                     font=("Arial", 10, "bold"))
-        settings_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-        
-        # Create two columns
-        left_frame = tk.Frame(settings_frame, bg=self.colors['bg'])
-        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        right_frame = tk.Frame(settings_frame, bg=self.colors['bg'])
-        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Left column inputs
-        self.create_input_field(left_frame, "Transmission Name:", self.transmission_data['name'],
-                              "Enter the name of the transmission")
-        
-        self.create_input_field(left_frame, "Transmission Cost ($):", self.transmission_data['cost'],
-                              "Enter the cost of the transmission in dollars")
-        
-        # Transmission type dropdown
-        type_frame = tk.Frame(left_frame, bg=self.colors['bg'])
+
+        load_preset_btn = tk.Button(
+            preset_frame, text="Load",
+            command=lambda: self.load_transmission_preset(preset_var.get()),
+            bg=self.colors['button_bg'], fg=self.colors['fg'],
+            relief=tk.RAISED, borderwidth=1,
+        )
+        load_preset_btn.pack(side=tk.LEFT, padx=5, pady=8)
+
+        settings_frame = tk.LabelFrame(
+            parent, text="Settings",
+            bg=self.colors['bg'], fg=self.colors['fg'],
+            font=("Arial", 10, "bold"),
+        )
+        settings_frame.pack(fill=tk.BOTH, expand=True, padx=6, pady=5)
+
+        fields = tk.Frame(settings_frame, bg=self.colors['bg'])
+        fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+
+        self.create_input_field(
+            fields, "Transmission Name:", self.transmission_data['name'],
+            "Enter the name of the transmission",
+        )
+        self.create_input_field(
+            fields, "Transmission Cost ($):", self.transmission_data['cost'],
+            "Enter the cost of the transmission in dollars",
+        )
+
+        type_frame = tk.Frame(fields, bg=self.colors['bg'])
         type_frame.pack(fill=tk.X, pady=5)
-        
-        type_label = tk.Label(type_frame, text="Transmission Type:", 
-                            bg=self.colors['bg'], fg=self.colors['fg'])
+        type_label = tk.Label(
+            type_frame, text="Transmission Type:",
+            bg=self.colors['bg'], fg=self.colors['fg'],
+        )
         type_label.pack(side=tk.LEFT)
-        
-        type_combo = ttk.Combobox(type_frame, textvariable=self.transmission_data['type'],
-                                 values=["Manual", "Automatic", "CVT", "PowerShift"],
-                                 state="readonly", width=15)
+        type_combo = ttk.Combobox(
+            type_frame, textvariable=self.transmission_data['type'],
+            values=["Manual", "Automatic", "CVT", "PowerShift"],
+            state="readonly", width=15,
+        )
         type_combo.pack(side=tk.LEFT, padx=5)
-        
         Tooltip(type_combo, "Select the type of transmission")
-        
-        self.create_input_field(left_frame, "Top Speed (km/h):", self.transmission_data['top_speed'],
-                              "Enter the maximum speed of the vehicle in km/h")
-        
-        # Right column inputs
-        self.create_input_field(right_frame, "Forward Gears:", self.transmission_data['num_forward'],
-                              "Enter the number of forward gears")
-        
-        self.create_input_field(right_frame, "Reverse Gears:", self.transmission_data['num_reverse'],
-                              "Enter the number of reverse gears")
-        
-        # Low gearing options
-        low_gear_frame = tk.Frame(right_frame, bg=self.colors['bg'])
+
+        self.create_input_field(
+            fields, "Top Speed (km/h):", self.transmission_data['top_speed'],
+            "Enter the maximum speed of the vehicle in km/h",
+        )
+        self.create_input_field(
+            fields, "Forward Gears:", self.transmission_data['num_forward'],
+            "Enter the number of forward gears",
+        )
+        self.create_input_field(
+            fields, "Reverse Gears:", self.transmission_data['num_reverse'],
+            "Enter the number of reverse gears",
+        )
+
+        low_gear_frame = tk.Frame(fields, bg=self.colors['bg'])
         low_gear_frame.pack(fill=tk.X, pady=5)
-        
-        low_gear_check = tk.Checkbutton(low_gear_frame, text="Enable Low Gearing",
-                                      variable=self.transmission_data['enable_low_gearing'],
-                                      bg=self.colors['bg'], fg=self.colors['fg'],
-                                      selectcolor=self.colors['input_bg'])
+        low_gear_check = tk.Checkbutton(
+            low_gear_frame, text="Enable Low Gearing",
+            variable=self.transmission_data['enable_low_gearing'],
+            bg=self.colors['bg'], fg=self.colors['fg'],
+            selectcolor=self.colors['input_bg'],
+        )
         low_gear_check.pack(side=tk.LEFT)
-        
-        Tooltip(low_gear_check, "Enable low gearing for enhanced torque output in first 25% of gears")
-        
-        boost_frame = tk.Frame(right_frame, bg=self.colors['bg'])
+        Tooltip(
+            low_gear_check,
+            "Enable low gearing for enhanced torque output in first 25% of gears",
+        )
+
+        boost_frame = tk.Frame(fields, bg=self.colors['bg'])
         boost_frame.pack(fill=tk.X, pady=5)
-        
-        boost_label = tk.Label(boost_frame, text="Low Gear Boost (%):", 
-                             bg=self.colors['bg'], fg=self.colors['fg'])
+        boost_label = tk.Label(
+            boost_frame, text="Low Gear Boost (%):",
+            bg=self.colors['bg'], fg=self.colors['fg'],
+        )
         boost_label.pack(side=tk.LEFT)
-        
-        boost_entry = tk.Entry(boost_frame, textvariable=self.transmission_data['low_gear_boost'],
-                             bg=self.colors['input_bg'], fg=self.colors['fg'],
-                             relief=tk.SOLID, borderwidth=1, width=10)
+        boost_entry = tk.Entry(
+            boost_frame, textvariable=self.transmission_data['low_gear_boost'],
+            bg=self.colors['input_bg'], fg=self.colors['fg'],
+            relief=tk.SOLID, borderwidth=1, width=10,
+        )
         boost_entry.pack(side=tk.LEFT, padx=5)
-        
         Tooltip(boost_entry, "Percentage boost for low gears (e.g., 25 for 25% boost)")
     
     def setup_output_tab(self, parent):
