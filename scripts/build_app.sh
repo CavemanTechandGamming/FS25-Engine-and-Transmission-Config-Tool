@@ -81,7 +81,22 @@ pyinstaller \
   --specpath "build/${PLATFORM}/${VERSION}/portable" \
   src/__main__.py
 
+OUT="dist/${PLATFORM}/${VERSION}/portable/${APP_NAME}"
+if [[ ! -f "$OUT" ]]; then
+  echo "ERROR: Expected portable binary not found: ${OUT}"
+  ls -la "dist/${PLATFORM}/${VERSION}/portable" || true
+  exit 1
+fi
+
+kind="linux"
+if [[ "$PLATFORM" == mac-* ]]; then
+  kind="macos"
+fi
+
+echo "Verifying portable binary ..."
+python scripts/verify_release_binary.py "$OUT" --kind "$kind" --expect-name "$APP_NAME"
+
 echo
 echo "Build complete:"
-echo "  Portable: dist/${PLATFORM}/${VERSION}/portable/${APP_NAME}"
+echo "  Portable: ${OUT}"
 echo

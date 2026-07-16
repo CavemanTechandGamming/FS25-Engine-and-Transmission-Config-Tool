@@ -87,26 +87,26 @@ jobs:
           APP_NAME="FS25 Engine and Transmission Config Tool"
           mkdir -p release-assets
           shopt -s nullglob
+          chmod +x scripts/verify_release_binary.py
 
-          find_binary() {
+          require_exact_file() {
             local dir="$1"
-            local pattern="$2"
-            local match=""
-            # Prefer exact / pattern matches that are regular files (not dirs/.app)
-            while IFS= read -r -d '' f; do
-              if [[ -f "$f" ]]; then
-                match="$f"
-                break
-              fi
-            done < <(find "$dir" -maxdepth 1 -type f -name "$pattern" -print0 2>/dev/null)
-            printf '%s' "$match"
+            local expect="$2"
+            local path="${dir}/${expect}"
+            if [[ ! -f "$path" ]]; then
+              echo "::error::Expected exact binary '${expect}' in ${dir}"
+              echo "::error::Directory contents:"
+              ls -la "$dir" || true
+              exit 1
+            fi
+            printf '%s' "$path"
           }
 
           for dir in artifacts/fs25-config-tool-*; do
             [[ -d "$dir" ]] || continue
             name="$(basename "$dir")"
             echo "Processing artifact: ${name}"
-            ls -la "$dir" || true
+            ls -lah "$dir" || true
 
             if [[ "$name" =~ ^fs25-config-tool-windows-(.+)-portable$ ]]; then
               art_version="${BASH_REMATCH[1]}"
@@ -114,18 +114,22 @@ jobs:
                 echo "::error::Artifact version ${art_version} != ${VERSION}"
                 exit 1
               }
-              src="$(find_binary "$dir" "*.exe")"
-              if [[ -z "$src" ]]; then
-                echo "::error::No portable .exe in ${dir}"
-                exit 1
-              fi
-              # Only Windows portable ships as a zip
+              src="$(require_exact_file "$dir" "${APP_NAME}.exe")"
+              python3 scripts/verify_release_binary.py "$src" \
+                --kind windows-exe \
+                --expect-name "${APP_NAME}.exe"
               zip_name="${APP_NAME}-${VERSION}-windows-portable.zip"
               (
                 cd "$dir"
-                zip -9 -j "$GITHUB_WORKSPACE/release-assets/${zip_name}" "$(basename "$src")"
+                zip -9 -j "$GITHUB_WORKSPACE/release-assets/${zip_name}" "${APP_NAME}.exe"
               )
-              echo "Staged ${zip_name}"
+              # Also verify the zip is not tiny
+              zip_size="$(wc -c <"release-assets/${zip_name}" | tr -d ' ')"
+              if [[ "$zip_size" -lt 5242880 ]]; then
+                echo "::error::Portable zip is only ${zip_size} bytes — too small."
+                exit 1
+              fi
+              echo "Staged ${zip_name} (${zip_size} bytes)"
 
             elif [[ "$name" =~ ^fs25-config-tool-windows-(.+)-installer$ ]]; then
               art_version="${BASH_REMATCH[1]}"
@@ -133,14 +137,11 @@ jobs:
                 echo "::error::Artifact version ${art_version} != ${VERSION}"
                 exit 1
               }
-              src="$(find_binary "$dir" "*-Setup.exe")"
-              if [[ -z "$src" ]]; then
-                src="$(find_binary "$dir" "*.exe")"
-              fi
-              if [[ -z "$src" ]]; then
-                echo "::error::No Setup .exe in ${dir}"
-                exit 1
-              fi
+              setup_name="${APP_NAME}-${VERSION}-Setup.exe"
+              src="$(require_exact_file "$dir" "${setup_name}")"
+              python3 scripts/verify_release_binary.py "$src" \
+                --kind windows-setup \
+                --expect-name "${setup_name}"
               dest="${APP_NAME}-${VERSION}-windows-setup.exe"
               cp -f "$src" "release-assets/${dest}"
               echo "Staged ${dest}"
@@ -152,20 +153,14 @@ jobs:
                 echo "::error::Artifact version ${art_version} != ${VERSION}"
                 exit 1
               }
-              src="$(find_binary "$dir" "${APP_NAME}")"
-              if [[ -z "$src" ]]; then
-                # Fallback: any non-.exe regular file in the folder
-                while IFS= read -r -d '' f; do
-                  if [[ -f "$f" && "$f" != *.exe && "$f" != *.app ]]; then
-                    src="$f"
-                    break
-                  fi
-                done < <(find "$dir" -maxdepth 1 -type f -print0 2>/dev/null)
+              src="$(require_exact_file "$dir" "${APP_NAME}")"
+              kind="linux"
+              if [[ "$platform" == mac-* ]]; then
+                kind="macos"
               fi
-              if [[ -z "$src" ]]; then
-                echo "::error::No binary found in ${dir}"
-                exit 1
-              fi
+              python3 scripts/verify_release_binary.py "$src" \
+                --kind "$kind" \
+                --expect-name "${APP_NAME}"
               dest="${APP_NAME}-${VERSION}-${platform}"
               cp -f "$src" "release-assets/${dest}"
               chmod +x "release-assets/${dest}"

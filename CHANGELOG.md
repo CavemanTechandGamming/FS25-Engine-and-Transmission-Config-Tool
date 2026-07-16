@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Releases use the full product name (**FS25 Engine and Transmission Config Tool**)
 - Only the Windows portable build is zip-wrapped; Windows Setup and Mac/Linux ship as bare binaries
 - Windows portable = onefile `.exe`; Windows installable = Inno Setup wrapper around that binary
+- Release/build binary verification: exact filename, minimum size (5 MiB), and PE/ELF/Mach-O magic checks
 
 ## [1.0.0] - 2025-07-22
 

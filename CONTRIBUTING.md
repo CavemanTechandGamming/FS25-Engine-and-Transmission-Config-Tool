@@ -188,4 +188,5 @@ Filename conventions and README wiring are described in [`docs/images/README.md`
 
 - UI (CustomTkinter / Tkinter): `src/ui/`
 - Torque curves, gear ratios, XML, presets: `src/core/`
+- Binary safety checks for CI/releases: `scripts/verify_release_binary.py`
 - Prefer small, focused pull requests

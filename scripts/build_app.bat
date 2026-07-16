@@ -108,6 +108,14 @@ if not exist "%INSTALLER_DIR%\%SETUP_NAME%.exe" (
     exit /b 1
 )
 
+echo Verifying portable binary ...
+python scripts\verify_release_binary.py "%PORTABLE_EXE%" --kind windows-exe --expect-name "%APP_NAME%.exe"
+if errorlevel 1 exit /b 1
+
+echo Verifying installer binary ...
+python scripts\verify_release_binary.py "%INSTALLER_DIR%\%SETUP_NAME%.exe" --kind windows-setup --expect-name "%SETUP_NAME%.exe"
+if errorlevel 1 exit /b 1
+
 echo.
 echo Build complete:
 echo   Portable : %PORTABLE_EXE%
