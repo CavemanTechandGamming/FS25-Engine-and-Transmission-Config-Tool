@@ -55,6 +55,9 @@ mkdir "build\%PLATFORM%\%VERSION%\portable" 2>nul
 
 python -m PyInstaller --noconfirm --clean --windowed --onefile ^
   --name "%APP_NAME%" --paths=. --collect-all customtkinter ^
+  --icon "assets\app_icon.ico" ^
+  --add-data "assets\app_icon_256.png;assets" ^
+  --add-data "assets\app_icon.ico;assets" ^
   --distpath "%PORTABLE_DIR%" ^
   --workpath "build\%PLATFORM%\%VERSION%\portable" ^
   --specpath "build\%PLATFORM%\%VERSION%\portable" ^

@@ -76,6 +76,9 @@ pyinstaller \
   --name "$APP_NAME" \
   --paths=. \
   --collect-all customtkinter \
+  --icon "assets/app_icon.png" \
+  --add-data "assets/app_icon_256.png:assets" \
+  --add-data "assets/app_icon.ico:assets" \
   --distpath "dist/${PLATFORM}/${VERSION}/portable" \
   --workpath "build/${PLATFORM}/${VERSION}/portable" \
   --specpath "build/${PLATFORM}/${VERSION}/portable" \

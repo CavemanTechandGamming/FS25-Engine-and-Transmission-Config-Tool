@@ -39,3 +39,9 @@ RELEASE_BODY.md
 
 # Local-only notes (never commit — personal / future work reminders)
 LOCAL_NOTES.md
+
+# Runtime data next to the app / project root (portable presets, settings, logs)
+/Custom Presets/
+/settings.json
+/fs25_config_tool.log
+/fs25_config_tool.log.*

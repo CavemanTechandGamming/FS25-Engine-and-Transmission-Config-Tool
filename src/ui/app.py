@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox, scrolledtext, simpledialog, ttk
+from tkinter import filedialog, scrolledtext, ttk
 from typing import Dict, List, Optional, Tuple
 
 try:
@@ -17,9 +17,25 @@ except ImportError:
     print("CustomTkinter not available, using standard Tkinter")
 
 from src import __version__
+from src.core.logging_setup import setup_logging
+from src.core.paths import app_icon_ico, app_icon_png
 from src.core.presets import PresetManager
+from src.core import settings as app_settings
 from src.core.xml_gen import XMLGenerator
 from src.ui.about import show_about
+from src.ui.dialogs import (
+    ask_string,
+    ask_yes_no,
+    set_dialog_parent,
+    show_error,
+    show_info,
+)
+from src.ui.settings_dialog import show_settings
+
+import logging
+import sys
+
+logger = logging.getLogger("fs25config.app")
 
 class Tooltip:
     """
@@ -87,6 +103,12 @@ class FS25ConfigTool:
         self.root.title(f"FS25 Engine and Transmission Config Tool v{__version__}")
         self.root.geometry("1400x900")
         self.root.minsize(1100, 700)
+        set_dialog_parent(self.root)
+        self.apply_window_icon()
+
+        setup_logging()
+        app_settings.load_settings()
+        PresetManager.reload_custom_presets()
         
         # Configure custom styling
         if CUSTOM_TKINTER_AVAILABLE:
@@ -121,6 +143,46 @@ class FS25ConfigTool:
         self.transmission_preset_dropdown = None
         
         self.setup_gui()
+        self.apply_startup_default_presets()
+        self.root.after(50, self.center_main_window)
+        logger.info("UI ready")
+
+    def apply_window_icon(self) -> None:
+        """Apply the pixel-art app icon to the window (and taskbar where supported)."""
+        try:
+            ico = app_icon_ico()
+            png = app_icon_png()
+            if sys.platform.startswith("win") and ico is not None:
+                try:
+                    self.root.iconbitmap(default=str(ico))
+                except Exception:
+                    self.root.iconbitmap(str(ico))
+            if png is not None:
+                # Keep a reference so Tk does not garbage-collect the image
+                self._window_icon = tk.PhotoImage(file=str(png))
+                self.root.iconphoto(True, self._window_icon)
+            elif ico is not None and not sys.platform.startswith("win"):
+                try:
+                    self.root.iconbitmap(str(ico))
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.warning("Could not apply window icon: %s", e)
+
+    def center_main_window(self, width: int = 1400, height: int = 900) -> None:
+        """Place the main window near the center of the primary screen."""
+        try:
+            self.root.update_idletasks()
+            sw = self.root.winfo_screenwidth()
+            sh = self.root.winfo_screenheight()
+            # Keep size within the screen (taskbar / small displays)
+            w = min(width, max(800, sw - 40))
+            h = min(height, max(600, sh - 80))
+            x = max(0, (sw - w) // 2)
+            y = max(0, (sh - h) // 2)
+            self.root.geometry(f"{w}x{h}+{x}+{y}")
+        except Exception:
+            pass
     
     def setup_custom_tkinter(self):
         """Set up CustomTkinter styling."""
@@ -202,6 +264,17 @@ class FS25ConfigTool:
         about_btn.grid(row=0, column=1, sticky="e", padx=(10, 0))
         Tooltip(about_btn, "About this app and support links")
 
+        settings_btn = ctk.CTkButton(
+            header,
+            text="Settings",
+            width=90,
+            fg_color=("gray70", "gray35"),
+            hover_color=("gray60", "gray30"),
+            command=self.open_settings,
+        )
+        settings_btn.grid(row=0, column=2, sticky="e", padx=(8, 0))
+        Tooltip(settings_btn, "Custom preset folder, defaults, and log location")
+
         # Left: Engine (top) + Transmission (bottom)
         left_col = ctk.CTkFrame(main_frame, fg_color="transparent")
         left_col.grid(row=1, column=0, sticky="nsew", padx=(6, 4), pady=(0, 6))
@@ -268,6 +341,16 @@ class FS25ConfigTool:
         about_btn.pack(side=tk.RIGHT)
         Tooltip(about_btn, "About this app and support links")
 
+        settings_btn = tk.Button(
+            header,
+            text="Settings",
+            command=self.open_settings,
+            bg=self.colors.get('button', '#404040'),
+            fg=self.colors['fg'],
+        )
+        settings_btn.pack(side=tk.RIGHT, padx=(0, 8))
+        Tooltip(settings_btn, "Custom preset folder, defaults, and log location")
+
         left_col = tk.Frame(main_frame, bg=self.colors['bg'])
         left_col.grid(row=1, column=0, sticky="nsew", padx=(0, 4))
         left_col.grid_columnconfigure(0, weight=1)
@@ -325,7 +408,17 @@ class FS25ConfigTool:
             width=64,
             command=lambda: self.load_engine_preset(preset_combo.get()),
         )
-        load_preset_btn.pack(side=tk.LEFT)
+        load_preset_btn.pack(side=tk.LEFT, padx=(0, 6))
+        Tooltip(load_preset_btn, "Load the selected engine preset into the form")
+
+        save_preset_btn = ctk.CTkButton(
+            preset_row,
+            text="Save",
+            width=64,
+            command=self.save_custom_engine_preset,
+        )
+        save_preset_btn.pack(side=tk.LEFT)
+        Tooltip(save_preset_btn, "Save current engine settings as a custom preset (Engine presets folder)")
 
         fields = ctk.CTkFrame(parent, fg_color="transparent")
         fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(2, 6))
@@ -391,7 +484,17 @@ class FS25ConfigTool:
             bg=self.colors['button_bg'], fg=self.colors['fg'],
             relief=tk.RAISED, borderwidth=1,
         )
-        load_preset_btn.pack(side=tk.LEFT)
+        load_preset_btn.pack(side=tk.LEFT, padx=(0, 6))
+        Tooltip(load_preset_btn, "Load the selected engine preset into the form")
+
+        save_preset_btn = tk.Button(
+            preset_row, text="Save",
+            command=self.save_custom_engine_preset,
+            bg=self.colors['button_bg'], fg=self.colors['fg'],
+            relief=tk.RAISED, borderwidth=1,
+        )
+        save_preset_btn.pack(side=tk.LEFT)
+        Tooltip(save_preset_btn, "Save current engine settings as a custom preset (Engine presets folder)")
 
         fields = tk.Frame(parent, bg=self.colors['bg'])
         fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(2, 6))
@@ -458,7 +561,17 @@ class FS25ConfigTool:
             width=64,
             command=lambda: self.load_transmission_preset(preset_combo.get()),
         )
-        load_preset_btn.pack(side=tk.LEFT)
+        load_preset_btn.pack(side=tk.LEFT, padx=(0, 6))
+        Tooltip(load_preset_btn, "Load the selected transmission preset into the form")
+
+        save_preset_btn = ctk.CTkButton(
+            preset_row,
+            text="Save",
+            width=64,
+            command=self.save_custom_transmission_preset,
+        )
+        save_preset_btn.pack(side=tk.LEFT)
+        Tooltip(save_preset_btn, "Save current transmission settings as a custom preset (Transmission presets folder)")
 
         fields = ctk.CTkFrame(parent, fg_color="transparent")
         fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(2, 6))
@@ -552,7 +665,17 @@ class FS25ConfigTool:
             bg=self.colors['button_bg'], fg=self.colors['fg'],
             relief=tk.RAISED, borderwidth=1,
         )
-        load_preset_btn.pack(side=tk.LEFT)
+        load_preset_btn.pack(side=tk.LEFT, padx=(0, 6))
+        Tooltip(load_preset_btn, "Load the selected transmission preset into the form")
+
+        save_preset_btn = tk.Button(
+            preset_row, text="Save",
+            command=self.save_custom_transmission_preset,
+            bg=self.colors['button_bg'], fg=self.colors['fg'],
+            relief=tk.RAISED, borderwidth=1,
+        )
+        save_preset_btn.pack(side=tk.LEFT)
+        Tooltip(save_preset_btn, "Save current transmission settings as a custom preset (Transmission presets folder)")
 
         fields = tk.Frame(parent, bg=self.colors['bg'])
         fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(2, 6))
@@ -682,36 +805,25 @@ class FS25ConfigTool:
 
         save_preset_btn = ctk.CTkButton(
             presets,
-            text="Save",
+            text="Export",
             width=70,
             fg_color=("gray70", "gray35"),
             hover_color=("gray60", "gray30"),
             command=self.save_current_preset,
         )
         save_preset_btn.pack(side=tk.LEFT, padx=(0, 6))
-        Tooltip(save_preset_btn, "Save current settings to a JSON preset file")
+        Tooltip(save_preset_btn, "Export engine + transmission settings to a JSON file")
 
         load_preset_btn = ctk.CTkButton(
             presets,
-            text="Load",
+            text="Import",
             width=70,
             fg_color=("gray70", "gray35"),
             hover_color=("gray60", "gray30"),
             command=self.load_current_preset,
         )
-        load_preset_btn.pack(side=tk.LEFT, padx=(0, 6))
-        Tooltip(load_preset_btn, "Load settings from a JSON preset file")
-
-        add_preset_btn = ctk.CTkButton(
-            presets,
-            text="Add",
-            width=70,
-            fg_color=("gray70", "gray35"),
-            hover_color=("gray60", "gray30"),
-            command=self.add_to_presets,
-        )
-        add_preset_btn.pack(side=tk.LEFT)
-        Tooltip(add_preset_btn, "Add current settings to the in-app preset list")
+        load_preset_btn.pack(side=tk.LEFT)
+        Tooltip(load_preset_btn, "Import engine + transmission settings from a JSON file")
 
         preview_frame = ctk.CTkFrame(parent)
         preview_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(4, 8))
@@ -790,9 +902,8 @@ class FS25ConfigTool:
         ).pack(side=tk.LEFT, padx=(0, 8))
 
         for text, cmd, tip in (
-            ("Save", self.save_current_preset, "Save current settings to a JSON preset file"),
-            ("Load", self.load_current_preset, "Load settings from a JSON preset file"),
-            ("Add", self.add_to_presets, "Add current settings to the in-app preset list"),
+            ("Export", self.save_current_preset, "Export engine + transmission settings to a JSON file"),
+            ("Import", self.load_current_preset, "Import engine + transmission settings from a JSON file"),
         ):
             btn = tk.Button(
                 presets,
@@ -1372,9 +1483,9 @@ class FS25ConfigTool:
             xml = XMLGenerator.generate_engine_xml(engine_data)
             self.highlight_xml_syntax(xml)
         except ValueError as e:
-            messagebox.showerror("Validation Error", f"Invalid input data: {str(e)}")
+            show_error("Validation Error", f"Invalid input data: {str(e)}")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to generate engine XML: {str(e)}")
+            show_error("Error", f"Failed to generate engine XML: {str(e)}")
     
     def generate_transmission_xml(self):
         """Generate and display transmission XML."""
@@ -1383,9 +1494,9 @@ class FS25ConfigTool:
             xml = XMLGenerator.generate_transmission_xml(transmission_data)
             self.highlight_xml_syntax(xml)
         except ValueError as e:
-            messagebox.showerror("Validation Error", f"Invalid input data: {str(e)}")
+            show_error("Validation Error", f"Invalid input data: {str(e)}")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to generate transmission XML: {str(e)}")
+            show_error("Error", f"Failed to generate transmission XML: {str(e)}")
     
     def generate_both_xml(self):
         """Generate and display both engine and transmission XML in FS25 format."""
@@ -1398,9 +1509,9 @@ class FS25ConfigTool:
             
             self.highlight_xml_syntax(combined_xml)
         except ValueError as e:
-            messagebox.showerror("Validation Error", f"Invalid input data: {str(e)}")
+            show_error("Validation Error", f"Invalid input data: {str(e)}")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to generate combined XML: {str(e)}")
+            show_error("Error", f"Failed to generate combined XML: {str(e)}")
 
     def copy_generated_xml(self):
         """Copy combined FS25 XML to the clipboard (same output as Generate XML)."""
@@ -1412,13 +1523,13 @@ class FS25ConfigTool:
             try:
                 self.root.clipboard_clear()
                 self.root.clipboard_append(xml)
-                messagebox.showinfo("Success", "FS25 XML copied to clipboard")
+                show_info("Success", "FS25 XML copied to clipboard")
             except tk.TclError as e:
-                messagebox.showerror("Error", f"Failed to access clipboard: {str(e)}")
+                show_error("Error", f"Failed to access clipboard: {str(e)}")
         except ValueError as e:
-            messagebox.showerror("Validation Error", f"Invalid input data: {str(e)}")
+            show_error("Validation Error", f"Invalid input data: {str(e)}")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to copy XML: {str(e)}")
+            show_error("Error", f"Failed to copy XML: {str(e)}")
     
     def save_both_xml(self):
         """Save both engine and transmission XML to separate files."""
@@ -1459,11 +1570,11 @@ class FS25ConfigTool:
             with open(transmission_filename, 'w', encoding='utf-8') as f:
                 f.write(transmission_xml)
             
-            messagebox.showinfo("Success", 
+            show_info("Success", 
                               f"Files saved:\n{combined_filename}\n{engine_filename}\n{transmission_filename}")
             
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save XML files: {str(e)}")
+            show_error("Error", f"Failed to save XML files: {str(e)}")
     
     def copy_engine_xml(self):
         """Copy engine XML to clipboard."""
@@ -1473,11 +1584,11 @@ class FS25ConfigTool:
             try:
                 self.root.clipboard_clear()
                 self.root.clipboard_append(xml)
-                messagebox.showinfo("Success", "Engine XML copied to clipboard")
+                show_info("Success", "Engine XML copied to clipboard")
             except tk.TclError as e:
-                messagebox.showerror("Clipboard Error", f"Failed to access clipboard: {str(e)}")
+                show_error("Clipboard Error", f"Failed to access clipboard: {str(e)}")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to copy engine XML: {str(e)}")
+            show_error("Error", f"Failed to copy engine XML: {str(e)}")
     
     def copy_transmission_xml(self):
         """Copy transmission XML to clipboard."""
@@ -1487,11 +1598,11 @@ class FS25ConfigTool:
             try:
                 self.root.clipboard_clear()
                 self.root.clipboard_append(xml)
-                messagebox.showinfo("Success", "Transmission XML copied to clipboard")
+                show_info("Success", "Transmission XML copied to clipboard")
             except tk.TclError as e:
-                messagebox.showerror("Clipboard Error", f"Failed to access clipboard: {str(e)}")
+                show_error("Clipboard Error", f"Failed to access clipboard: {str(e)}")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to copy transmission XML: {str(e)}")
+            show_error("Error", f"Failed to copy transmission XML: {str(e)}")
     
     def save_engine_xml(self):
         """Save engine XML to file."""
@@ -1504,39 +1615,39 @@ class FS25ConfigTool:
             if filename:
                 # Validate filename
                 if not filename.strip():
-                    messagebox.showerror("Error", "Invalid filename provided")
+                    show_error("Error", "Invalid filename provided")
                     return
                 
                 # Get and validate data before saving
                 try:
                     engine_data = self.get_engine_data()
                 except ValueError as e:
-                    messagebox.showerror("Validation Error", f"Invalid engine data: {str(e)}")
+                    show_error("Validation Error", f"Invalid engine data: {str(e)}")
                     return
                 except Exception as e:
-                    messagebox.showerror("Data Error", f"Failed to retrieve engine data: {str(e)}")
+                    show_error("Data Error", f"Failed to retrieve engine data: {str(e)}")
                     return
                 
                 # Generate XML
                 try:
                     xml = XMLGenerator.generate_engine_xml(engine_data)
                 except Exception as e:
-                    messagebox.showerror("XML Generation Error", f"Failed to generate XML: {str(e)}")
+                    show_error("XML Generation Error", f"Failed to generate XML: {str(e)}")
                     return
                 
                 # Save file with specific error handling
                 try:
                     with open(filename, 'w', encoding='utf-8') as f:
                         f.write(xml)
-                    messagebox.showinfo("Success", f"Engine XML saved to {filename}")
+                    show_info("Success", f"Engine XML saved to {filename}")
                 except PermissionError:
-                    messagebox.showerror("Permission Error", f"Cannot save to {filename}. Check file permissions.")
+                    show_error("Permission Error", f"Cannot save to {filename}. Check file permissions.")
                 except OSError as e:
-                    messagebox.showerror("File System Error", f"Failed to save file: {str(e)}")
+                    show_error("File System Error", f"Failed to save file: {str(e)}")
                 except Exception as e:
-                    messagebox.showerror("Save Error", f"Unexpected error while saving: {str(e)}")
+                    show_error("Save Error", f"Unexpected error while saving: {str(e)}")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save engine XML: {str(e)}")
+            show_error("Error", f"Failed to save engine XML: {str(e)}")
     
     def save_transmission_xml(self):
         """Save transmission XML to file."""
@@ -1549,39 +1660,39 @@ class FS25ConfigTool:
             if filename:
                 # Validate filename
                 if not filename.strip():
-                    messagebox.showerror("Error", "Invalid filename provided")
+                    show_error("Error", "Invalid filename provided")
                     return
                 
                 # Get and validate data before saving
                 try:
                     transmission_data = self.get_transmission_data()
                 except ValueError as e:
-                    messagebox.showerror("Validation Error", f"Invalid transmission data: {str(e)}")
+                    show_error("Validation Error", f"Invalid transmission data: {str(e)}")
                     return
                 except Exception as e:
-                    messagebox.showerror("Data Error", f"Failed to retrieve transmission data: {str(e)}")
+                    show_error("Data Error", f"Failed to retrieve transmission data: {str(e)}")
                     return
                 
                 # Generate XML
                 try:
                     xml = XMLGenerator.generate_transmission_xml(transmission_data)
                 except Exception as e:
-                    messagebox.showerror("XML Generation Error", f"Failed to generate XML: {str(e)}")
+                    show_error("XML Generation Error", f"Failed to generate XML: {str(e)}")
                     return
                 
                 # Save file with specific error handling
                 try:
                     with open(filename, 'w', encoding='utf-8') as f:
                         f.write(xml)
-                    messagebox.showinfo("Success", f"Transmission XML saved to {filename}")
+                    show_info("Success", f"Transmission XML saved to {filename}")
                 except PermissionError:
-                    messagebox.showerror("Permission Error", f"Cannot save to {filename}. Check file permissions.")
+                    show_error("Permission Error", f"Cannot save to {filename}. Check file permissions.")
                 except OSError as e:
-                    messagebox.showerror("File System Error", f"Failed to save file: {str(e)}")
+                    show_error("File System Error", f"Failed to save file: {str(e)}")
                 except Exception as e:
-                    messagebox.showerror("Save Error", f"Unexpected error while saving: {str(e)}")
+                    show_error("Save Error", f"Unexpected error while saving: {str(e)}")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save transmission XML: {str(e)}")
+            show_error("Error", f"Failed to save transmission XML: {str(e)}")
     
     def save_current_preset(self):
         """Save current configuration as a preset."""
@@ -1594,7 +1705,7 @@ class FS25ConfigTool:
             if filename:
                 # Validate filename
                 if not filename.strip():
-                    messagebox.showerror("Error", "Invalid filename provided")
+                    show_error("Error", "Invalid filename provided")
                     return
                 
                 # Get and validate data before saving
@@ -1602,10 +1713,10 @@ class FS25ConfigTool:
                     engine_data = self.get_engine_data()
                     transmission_data = self.get_transmission_data()
                 except ValueError as e:
-                    messagebox.showerror("Validation Error", f"Invalid configuration data: {str(e)}")
+                    show_error("Validation Error", f"Invalid configuration data: {str(e)}")
                     return
                 except Exception as e:
-                    messagebox.showerror("Data Error", f"Failed to retrieve configuration data: {str(e)}")
+                    show_error("Data Error", f"Failed to retrieve configuration data: {str(e)}")
                     return
                 
                 preset_data = {
@@ -1616,14 +1727,15 @@ class FS25ConfigTool:
                 # Save with specific error handling
                 try:
                     PresetManager.save_preset(preset_data, filename)
+                    show_info("Success", f"Preset saved to {filename}")
                 except PermissionError:
-                    messagebox.showerror("Permission Error", f"Cannot save to {filename}. Check file permissions.")
+                    show_error("Permission Error", f"Cannot save to {filename}. Check file permissions.")
                 except OSError as e:
-                    messagebox.showerror("File System Error", f"Failed to save file: {str(e)}")
+                    show_error("File System Error", f"Failed to save file: {str(e)}")
                 except Exception as e:
-                    messagebox.showerror("Save Error", f"Unexpected error while saving: {str(e)}")
+                    show_error("Save Error", f"Unexpected error while saving: {str(e)}")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save preset: {str(e)}")
+            show_error("Error", f"Failed to save preset: {str(e)}")
     
     def load_current_preset(self):
         """Load configuration from a preset file."""
@@ -1633,7 +1745,11 @@ class FS25ConfigTool:
                 title="Load Configuration Preset"
             )
             if filename:
-                preset_data = PresetManager.load_preset(filename)
+                try:
+                    preset_data = PresetManager.load_preset(filename)
+                except Exception as e:
+                    show_error("Error", f"Failed to load preset: {str(e)}")
+                    return
                 if preset_data:
                     # Load engine data with error handling
                     if 'engine' in preset_data:
@@ -1653,7 +1769,7 @@ class FS25ConfigTool:
                             self.engine_data['fuel_usage_scale'].set(str(engine['fuel_usage_scale']))
                             self.engine_data['turbocharged'].set(bool(engine['turbocharged']))
                         except (KeyError, ValueError, TypeError) as e:
-                            messagebox.showerror("Error", f"Invalid engine data in preset: {str(e)}")
+                            show_error("Error", f"Invalid engine data in preset: {str(e)}")
                             return
                     
                     # Load transmission data with error handling
@@ -1675,98 +1791,198 @@ class FS25ConfigTool:
                             self.transmission_data['enable_low_gearing'].set(bool(trans['enable_low_gearing']))
                             self.transmission_data['low_gear_boost'].set(str(trans['low_gear_boost']))
                         except (KeyError, ValueError, TypeError) as e:
-                            messagebox.showerror("Error", f"Invalid transmission data in preset: {str(e)}")
+                            show_error("Error", f"Invalid transmission data in preset: {str(e)}")
                             return
                     
-                    messagebox.showinfo("Success", "Preset loaded successfully!")
+                    show_info("Success", "Preset loaded successfully!")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to load preset: {str(e)}")
+            show_error("Error", f"Failed to load preset: {str(e)}")
     
-    def add_to_presets(self):
-        """Add current configuration to the preset lists."""
+    def open_settings(self):
+        """Open Settings (preset folder, defaults, log path)."""
+        show_settings(self.root, on_saved=self.on_settings_saved)
+
+    def on_settings_saved(self):
+        """Reload custom presets and refresh UI after Settings save."""
         try:
-            # Get current configuration
+            PresetManager.reload_custom_presets()
+            self.refresh_preset_dropdowns()
+            self.apply_startup_default_presets()
+            logger.info("Applied settings changes")
+        except Exception as e:
+            logger.exception("Failed after settings save: %s", e)
+            show_error("Settings", f"Settings saved, but refresh failed:\n{e}")
+
+    def apply_startup_default_presets(self):
+        """Load configured default engine/transmission presets into the form."""
+        try:
+            engine_name = app_settings.get_default_engine_preset()
+            trans_name = app_settings.get_default_transmission_preset()
+            if engine_name:
+                self.load_engine_preset(engine_name)
+                self._set_dropdown_value(self.engine_preset_dropdown, engine_name)
+                logger.info("Applied default engine preset: %s", engine_name)
+            if trans_name:
+                self.load_transmission_preset(trans_name)
+                self._set_dropdown_value(self.transmission_preset_dropdown, trans_name)
+                logger.info("Applied default transmission preset: %s", trans_name)
+        except Exception as e:
+            logger.exception("Failed to apply default presets: %s", e)
+
+    def _set_dropdown_value(self, dropdown, value: str) -> None:
+        if not dropdown or not value:
+            return
+        try:
+            if CUSTOM_TKINTER_AVAILABLE:
+                dropdown.set(value)
+            else:
+                dropdown.set(value)
+        except Exception:
+            pass
+
+    def _ask_custom_preset_name(self, kind: str) -> Optional[str]:
+        """Ask for a custom preset name and validate it. Returns None if cancelled/invalid."""
+        import re
+
+        preset_name = ask_string(
+            f"Save {kind} Preset",
+            f"Enter a name for this custom {kind.lower()} preset:",
+            parent=self.root,
+        )
+        if preset_name is None:
+            return None
+
+        preset_name = preset_name.strip()
+        if not preset_name:
+            show_error("Error", "Preset name cannot be empty")
+            return None
+
+        invalid_chars = re.findall(r'[<>:"/\\|?*]', preset_name)
+        if invalid_chars:
+            show_error(
+                "Error",
+                f"Preset name contains invalid characters: {', '.join(set(invalid_chars))}",
+            )
+            return None
+
+        if len(preset_name) > 50:
+            show_error("Error", "Preset name must be 50 characters or less")
+            return None
+
+        return preset_name
+
+    def save_custom_engine_preset(self):
+        """Save current engine settings into Custom Presets / Engine presets."""
+        try:
             try:
                 engine_data = self.get_engine_data()
-                transmission_data = self.get_transmission_data()
             except ValueError as e:
-                messagebox.showerror("Validation Error", f"Invalid configuration data: {str(e)}")
+                show_error("Validation Error", f"Invalid engine data: {str(e)}")
                 return
             except Exception as e:
-                messagebox.showerror("Data Error", f"Failed to retrieve configuration data: {str(e)}")
+                show_error("Data Error", f"Failed to retrieve engine data: {str(e)}")
                 return
-            
-            # Ask user for preset name
-            preset_name = tk.simpledialog.askstring("Add Preset", 
-                                                   "Enter a name for this preset:")
+
+            preset_name = self._ask_custom_preset_name("Engine")
             if not preset_name:
                 return
-            
-            # Validate preset name
-            preset_name = preset_name.strip()
-            if not preset_name:
-                messagebox.showerror("Error", "Preset name cannot be empty")
+
+            if PresetManager.is_builtin_engine(preset_name):
+                show_error(
+                    "Error",
+                    f"'{preset_name}' is a built-in engine preset. Choose a different name.",
+                )
                 return
-            
-            # Check for invalid characters
-            import re
-            invalid_chars = re.findall(r'[<>:"/\\|?*]', preset_name)
-            if invalid_chars:
-                messagebox.showerror("Error", f"Preset name contains invalid characters: {', '.join(set(invalid_chars))}")
-                return
-            
-            # Check length limits
-            if len(preset_name) > 50:
-                messagebox.showerror("Error", "Preset name must be 50 characters or less")
-                return
-            
-            # Check for duplicates
+
             if preset_name in PresetManager.get_engine_presets():
-                result = messagebox.askyesno("Duplicate Preset", 
-                                           f"Preset '{preset_name}' already exists. Do you want to overwrite it?")
-                if not result:
+                if not ask_yes_no(
+                    "Duplicate Preset",
+                    f"Custom engine preset '{preset_name}' already exists. Overwrite?",
+                ):
                     return
-            
-            # Add to engine presets (thread-safe)
-            PresetManager.add_engine_preset(preset_name, engine_data)
-            
-            # Add to transmission presets (thread-safe)
-            PresetManager.add_transmission_preset(preset_name, transmission_data)
-            
-            messagebox.showinfo("Success", f"Preset '{preset_name}' added successfully!")
-            
-            # Refresh preset dropdowns
+
+            PresetManager.add_engine_preset(preset_name, engine_data, persist=True)
             self.refresh_preset_dropdowns()
-            
+            self._set_dropdown_value(self.engine_preset_dropdown, preset_name)
+            show_info(
+                "Success",
+                f"Engine preset '{preset_name}' saved to Custom Presets / Engine presets.",
+            )
+            logger.info("Saved custom engine preset: %s", preset_name)
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to add preset: {str(e)}")
-    
+            logger.exception("Failed to save engine preset: %s", e)
+            show_error("Error", f"Failed to save engine preset: {str(e)}")
+
+    def save_custom_transmission_preset(self):
+        """Save current transmission settings into Custom Presets / Transmission presets."""
+        try:
+            try:
+                transmission_data = self.get_transmission_data()
+            except ValueError as e:
+                show_error(
+                    "Validation Error", f"Invalid transmission data: {str(e)}"
+                )
+                return
+            except Exception as e:
+                show_error(
+                    "Data Error", f"Failed to retrieve transmission data: {str(e)}"
+                )
+                return
+
+            preset_name = self._ask_custom_preset_name("Transmission")
+            if not preset_name:
+                return
+
+            if PresetManager.is_builtin_transmission(preset_name):
+                show_error(
+                    "Error",
+                    f"'{preset_name}' is a built-in transmission preset. Choose a different name.",
+                )
+                return
+
+            if preset_name in PresetManager.get_transmission_presets():
+                if not ask_yes_no(
+                    "Duplicate Preset",
+                    f"Custom transmission preset '{preset_name}' already exists. Overwrite?",
+                ):
+                    return
+
+            PresetManager.add_transmission_preset(
+                preset_name, transmission_data, persist=True
+            )
+            self.refresh_preset_dropdowns()
+            self._set_dropdown_value(self.transmission_preset_dropdown, preset_name)
+            show_info(
+                "Success",
+                f"Transmission preset '{preset_name}' saved to Custom Presets / Transmission presets.",
+            )
+            logger.info("Saved custom transmission preset: %s", preset_name)
+        except Exception as e:
+            logger.exception("Failed to save transmission preset: %s", e)
+            show_error("Error", f"Failed to save transmission preset: {str(e)}")
+
     def refresh_preset_dropdowns(self):
         """Refresh the preset dropdown lists."""
         try:
-            # Get thread-safe copies of preset lists
             engine_presets = PresetManager.get_engine_presets()
             transmission_presets = PresetManager.get_transmission_presets()
-            
-            # Refresh engine preset dropdown
+
             if self.engine_preset_dropdown:
+                values = list(engine_presets.keys())
                 if CUSTOM_TKINTER_AVAILABLE:
-                    # For CustomTkinter OptionMenu
-                    self.engine_preset_dropdown.configure(values=list(engine_presets.keys()))
+                    self.engine_preset_dropdown.configure(values=values)
                 else:
-                    # For standard Tkinter Combobox
-                    self.engine_preset_dropdown['values'] = list(engine_presets.keys())
-            
-            # Refresh transmission preset dropdown
+                    self.engine_preset_dropdown['values'] = values
+
             if self.transmission_preset_dropdown:
+                values = list(transmission_presets.keys())
                 if CUSTOM_TKINTER_AVAILABLE:
-                    # For CustomTkinter OptionMenu
-                    self.transmission_preset_dropdown.configure(values=list(transmission_presets.keys()))
+                    self.transmission_preset_dropdown.configure(values=values)
                 else:
-                    # For standard Tkinter Combobox
-                    self.transmission_preset_dropdown['values'] = list(transmission_presets.keys())
-                    
+                    self.transmission_preset_dropdown['values'] = values
+
         except Exception as e:
+            logger.exception("Error refreshing preset dropdowns: %s", e)
             print(f"Error refreshing preset dropdowns: {str(e)}")
 
 

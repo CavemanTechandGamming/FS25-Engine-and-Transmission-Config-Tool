@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-16
+
 ### Added
 
 - Repository layout aligned with Subtitle Muxer (`src/`, `scripts/`, `requirements/`, `docs/`)
@@ -15,11 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Issue templates for bug reports and feature requests
 - Real Windows installer via Inno Setup (`packaging/windows/setup.iss`) — single Setup `.exe`
 - In-app **About** dialog with [Buy Me a Coffee](https://www.buymeacoffee.com/caveman117) support link
-- Single-page layout: engine (top) and transmission (bottom) on the left, XML preview/actions on the right — no tab switching
-- Streamlined output toolbar: one **Generate XML** action for combined engine + transmission, plus Copy / Save and preset controls
-- XML preview uses word wrap (no horizontal scrollbar); line numbers stay aligned with wrapped lines
+- Streamlined output toolbar: one **Generate XML** action for combined engine + transmission, plus Copy / Save and preset Export/Import
 - XML preview vertical scrollbar is theme-matched and only appears when content overflows
-- Compact engine/transmission forms: shorter numeric inputs and paired fields so settings fit without clipping
+- **Custom presets** on disk under `Custom Presets/Engine presets` and `Custom Presets/Transmission presets` (JSON), merged into the dropdowns automatically
+- Per-section **Save** next to **Load** (engine saves engine-only; transmission saves transmission-only)
+- **Settings** dialog: custom-presets folder location (default: alongside the EXE / app folder), default engine/transmission presets on startup, and **Open log file**
+- Themed modal dialogs (prompts, alerts, confirmations) match the dark app UI
+- Pixel-art app icon (`assets/`) for the window, Windows EXE/installer, and packaged builds
+- Rotating app log file (`fs25_config_tool.log`, ~256 KiB × 2) for troubleshooting without bloating the install folder
 
 ### Changed
 
@@ -30,6 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Only the Windows portable build is zip-wrapped; Windows Setup and Mac/Linux ship as bare binaries
 - Windows portable = onefile `.exe`; Windows installable = Inno Setup wrapper around that binary
 - Release/build binary verification: exact filename, minimum size (5 MiB), and PE/ELF/Mach-O magic checks
+- Main window layout: **Engine** (top) and **Transmission** (bottom) stacked on the left; XML preview and actions on the right (no tabs)
+- XML preview uses **word wrap** (no horizontal scrollbar); line numbers stay aligned with wrapped lines
+- Engine and transmission forms use compact paired fields and shorter numeric inputs so settings fit without clipping
+- Main window centers on the primary screen at launch; Settings dialog sized to fit its contents
+
+### Fixed
+
+- Standard Tkinter fallback no longer tries to build the UI before form variables exist
 
 ## [1.0.0] - 2025-07-22
 
@@ -73,5 +86,6 @@ Initial public release of the FS25 Engine and Transmission Config Tool — a des
 - Thread-safe preset management
 - UTF-8 support for international characters
 
-[Unreleased]: https://github.com/CavemanTechandGamming/FS25-Engine-and-Transmission-Config-Tool/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/CavemanTechandGamming/FS25-Engine-and-Transmission-Config-Tool/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/CavemanTechandGamming/FS25-Engine-and-Transmission-Config-Tool/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/CavemanTechandGamming/FS25-Engine-and-Transmission-Config-Tool/releases/tag/v1.0.0

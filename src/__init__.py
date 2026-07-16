@@ -4,4 +4,4 @@
 Bump it here; the UI, CI release tags, and packaging scripts all read from this value.
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
