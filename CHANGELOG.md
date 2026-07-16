@@ -13,11 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Manual **Build** and **Build and Release** GitHub Actions workflows (Windows, macOS Intel/Apple Silicon, Linux distros)
 - `CONTRIBUTING.md` for developers and packaging instructions
 - Issue templates for bug reports and feature requests
+- Real Windows installer via Inno Setup (`packaging/windows/setup.iss`) — single Setup `.exe`
 
 ### Changed
 
 - Application packaged as `python -m src` with version from `src/__init__.py`
 - Core logic split into `src/core/`; UI lives in `src/ui/`
+- Dropped PyInstaller `--onedir` “installer” folder; releases ship bare binaries (not zip-wrapped folders)
+- Windows portable = onefile `.exe`; Windows installable = Inno Setup wrapper around that binary
 
 ## [1.0.0] - 2025-07-22
 

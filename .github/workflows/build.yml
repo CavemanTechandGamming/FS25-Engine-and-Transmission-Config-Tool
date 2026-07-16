@@ -1,14 +1,13 @@
 # =============================================================================
-# FS25 Config Tool — manual multi-platform PyInstaller builds (artifacts only)
+# FS25 Config Tool — manual multi-platform builds (artifacts only)
 # Trigger: Actions → Build → Run workflow
 # Also callable from the Build and Release workflow.
 #
-# Artifact examples (only Windows includes portable/installer):
-#   fs25-config-tool-windows-1.0.0-portable
-#   fs25-config-tool-windows-1.0.0-installer
-#   fs25-config-tool-mac-apple-silicon-1.0.0
-#   fs25-config-tool-mac-intel-1.0.0
-#   fs25-config-tool-ubuntu-1.0.0
+# Artifact examples:
+#   fs25-config-tool-windows-1.0.0-portable   → single .exe
+#   fs25-config-tool-windows-1.0.0-installer  → single Setup.exe (Inno Setup)
+#   fs25-config-tool-mac-apple-silicon-1.0.0  → single binary
+#   fs25-config-tool-ubuntu-1.0.0             → single binary
 # =============================================================================
 name: Build
 
@@ -46,19 +45,15 @@ jobs:
           - os: windows-latest
             platform: windows
             label: Windows
-            upload_installer: true
           - os: macos-15
             platform: mac-apple-silicon
             label: Mac Apple Silicon
-            upload_installer: false
           - os: macos-15-intel
             platform: mac-intel
             label: Mac Intel
-            upload_installer: false
 
     env:
       FS25_CONFIG_TOOL_PLATFORM: ${{ matrix.platform }}
-      FS25_CONFIG_TOOL_BUILD_KINDS: portable
 
     steps:
       - name: Checkout
@@ -79,6 +74,17 @@ jobs:
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "App version: ${VERSION}"
 
+      - name: Install Inno Setup (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            throw "ISCC.exe not found after installing Inno Setup"
+          }
+          Write-Host "ISCC: $iscc"
+
       - name: Setup env (Windows)
         if: matrix.platform == 'windows'
         shell: cmd
@@ -86,7 +92,7 @@ jobs:
           call scripts\setup_env.bat
           if errorlevel 1 exit /b 1
 
-      - name: Build (Windows)
+      - name: Build portable + installer (Windows)
         if: matrix.platform == 'windows'
         shell: cmd
         run: |
@@ -105,16 +111,16 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: fs25-config-tool-windows-${{ steps.version.outputs.version }}-portable
-          path: dist/windows/${{ steps.version.outputs.version }}/portable/**
+          path: dist/windows/${{ steps.version.outputs.version }}/portable/*.exe
           if-no-files-found: error
           retention-days: 30
 
       - name: Upload Windows installer artifact
-        if: matrix.upload_installer
+        if: matrix.platform == 'windows'
         uses: actions/upload-artifact@v7
         with:
           name: fs25-config-tool-windows-${{ steps.version.outputs.version }}-installer
-          path: dist/windows/${{ steps.version.outputs.version }}/installer/**
+          path: dist/windows/${{ steps.version.outputs.version }}/installer/*-Setup.exe
           if-no-files-found: error
           retention-days: 30
 
@@ -123,7 +129,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: fs25-config-tool-${{ matrix.platform }}-${{ steps.version.outputs.version }}
-          path: dist/${{ matrix.platform }}/${{ steps.version.outputs.version }}/portable/**
+          path: dist/${{ matrix.platform }}/${{ steps.version.outputs.version }}/portable/FS25ConfigTool-*
           if-no-files-found: error
           retention-days: 30
 
@@ -155,7 +161,6 @@ jobs:
 
     env:
       FS25_CONFIG_TOOL_PLATFORM: ${{ matrix.platform }}
-      FS25_CONFIG_TOOL_BUILD_KINDS: portable
 
     steps:
       - name: Checkout
@@ -176,13 +181,13 @@ jobs:
       - name: Setup env
         run: ./scripts/setup_env.sh
 
-      - name: Build with PyInstaller
+      - name: Build portable binary
         run: ./scripts/build_app.sh
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v7
         with:
           name: fs25-config-tool-${{ matrix.platform }}-${{ steps.version.outputs.version }}
-          path: dist/${{ matrix.platform }}/${{ steps.version.outputs.version }}/portable/**
+          path: dist/${{ matrix.platform }}/${{ steps.version.outputs.version }}/portable/FS25ConfigTool-*
           if-no-files-found: error
           retention-days: 30

@@ -33,11 +33,12 @@ Desktop app for generating Farming Simulator 25 engine and transmission XML conf
 ## Download
 
 1. Open this repository’s **[Releases](https://github.com/CavemanTechandGamming/FS25-Engine-and-Transmission-Config-Tool/releases)** page.
-2. Download the zip for your OS:
-   - **Windows** — `…-windows-portable` (single `.exe`) or `…-windows-installer` (folder)
-   - **Mac** — `…-mac-apple-silicon` or `…-mac-intel`
-   - **Linux** — `…-<distro>` (e.g. `…-ubuntu`)
-3. Extract if needed, then run **FS25 Config Tool**.
+2. Download the binary for your OS (no zip extract required for normal use):
+   - **Windows portable** — `FS25ConfigTool-…-windows-portable.exe` (run directly)
+   - **Windows installer** — `FS25ConfigTool-…-windows-setup.exe` (real Setup; Start Menu / optional desktop shortcut)
+   - **Mac** — `FS25ConfigTool-…-mac-apple-silicon` or `…-mac-intel`
+   - **Linux** — `FS25ConfigTool-…-<distro>` (e.g. `…-ubuntu`)
+3. On macOS/Linux, make it executable if needed: `chmod +x FS25ConfigTool-*`
 
 > **Linux note:** Farming Simulator 25 is not natively released for Linux, but it runs via [Steam Proton](https://www.protondb.com/app/2300320). A Linux build of this tool is included for modders on that platform.
 

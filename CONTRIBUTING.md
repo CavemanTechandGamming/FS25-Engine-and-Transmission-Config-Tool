@@ -18,6 +18,7 @@ Keep the **repository root** reserved for project metadata only:
 | `src/` | Application source code |
 | `scripts/` | Setup / run / build helpers |
 | `requirements/` | Python dependency pins |
+| `packaging/` | Installer definitions (Windows Inno Setup) |
 
 Do not add application code, build outputs, or virtualenvs at the root.
 
@@ -90,15 +91,17 @@ python -m src
 
 ## Build locally
 
-Windows builds **both** portable (single `.exe`) and installer (folder).
-Linux and Mac default to one packaged binary each.
+Windows builds a **portable onefile `.exe`** and a **real Inno Setup installer** (single Setup `.exe`).
+Linux and Mac build a portable onefile binary only.
 
 | Type | Example |
 |------|---------|
 | Windows portable | `dist/windows/1.0.0/portable/FS25ConfigTool-1.0.0.exe` |
-| Windows installer | `dist/windows/1.0.0/installer/FS25ConfigTool-1.0.0/` |
+| Windows installer | `dist/windows/1.0.0/installer/FS25ConfigTool-1.0.0-Setup.exe` |
 | Mac Apple Silicon | `dist/mac-apple-silicon/1.0.0/portable/FS25ConfigTool-1.0.0` |
 | Mac Intel | `dist/mac-intel/1.0.0/portable/FS25ConfigTool-1.0.0` |
+
+**Windows prerequisites:** [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`ISCC.exe`), or `choco install innosetup -y`.
 
 ```bat
 scripts\build_app.bat
@@ -106,8 +109,6 @@ scripts\build_app.bat
 
 ```bash
 ./scripts/build_app.sh
-# Optional: also build the folder layout
-FS25_CONFIG_TOOL_BUILD_KINDS=both ./scripts/build_app.sh
 ```
 
 ## GitHub Actions
@@ -117,20 +118,19 @@ Two manual workflows (no push/PR triggers):
 | Workflow | File | What it does |
 |----------|------|----------------|
 | **Build** | [`.github/workflows/build.yml`](.github/workflows/build.yml) | Matrix build → upload versioned artifacts |
-| **Build and Release** | [`.github/workflows/release.yml`](.github/workflows/release.yml) | Same builds → GitHub Release with versioned zips |
+| **Build and Release** | [`.github/workflows/release.yml`](.github/workflows/release.yml) | Same builds → GitHub Release with bare binaries |
 
 Windows/macOS default to Python **3.14**. Linux builds use each distro’s system Python in containers.
 
 ### What gets built
 
-Only **Windows** labels include `portable` / `installer` in the artifact name.
-
-| Platform | Artifact name example |
-|----------|------------------------|
-| Windows | `fs25-config-tool-windows-1.0.0-portable` / `…-installer` |
-| Mac Apple Silicon | `fs25-config-tool-mac-apple-silicon-1.0.0` |
-| Mac Intel | `fs25-config-tool-mac-intel-1.0.0` |
-| Linux | `fs25-config-tool-ubuntu-1.0.0` (same pattern per distro) |
+| Platform | Artifact name example | Contents |
+|----------|------------------------|----------|
+| Windows portable | `fs25-config-tool-windows-1.0.0-portable` | Single `.exe` |
+| Windows installer | `fs25-config-tool-windows-1.0.0-installer` | Single `*-Setup.exe` (Inno Setup) |
+| Mac Apple Silicon | `fs25-config-tool-mac-apple-silicon-1.0.0` | Single binary |
+| Mac Intel | `fs25-config-tool-mac-intel-1.0.0` | Single binary |
+| Linux | `fs25-config-tool-ubuntu-1.0.0` (same pattern per distro) | Single binary |
 
 ### Linux matrix
 
@@ -159,13 +159,13 @@ gh run download
 
 1. Bump `__version__` in `src/__init__.py`, update `CHANGELOG.md`, and push to `main`
 2. Actions → **Build and Release** → **Run workflow**
-3. Creates tag `vX.Y.Z` and attaches zips such as:
+3. Creates tag `vX.Y.Z` and attaches bare binaries such as:
 
-   - `FS25ConfigTool-1.0.0-windows-portable.zip`
-   - `FS25ConfigTool-1.0.0-windows-installer.zip`
-   - `FS25ConfigTool-1.0.0-mac-apple-silicon.zip`
-   - `FS25ConfigTool-1.0.0-mac-intel.zip`
-   - `FS25ConfigTool-1.0.0-ubuntu.zip`
+   - `FS25ConfigTool-1.0.0-windows-portable.exe`
+   - `FS25ConfigTool-1.0.0-windows-setup.exe`
+   - `FS25ConfigTool-1.0.0-mac-apple-silicon`
+   - `FS25ConfigTool-1.0.0-mac-intel`
+   - `FS25ConfigTool-1.0.0-ubuntu`
    - (same pattern for `debian`, `mint`, `fedora`, `arch`)
 
 Optional inputs: **draft**, **prerelease**.

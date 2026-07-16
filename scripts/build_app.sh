@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 # ──────────────────────────────────────────────────────────────────────────────
-# build_app.sh — versioned PyInstaller builds (Linux / macOS)
+# build_app.sh — portable onefile PyInstaller builds (Linux / macOS)
 #
 # Version comes from src/__init__.py (single source of truth).
-#
-# By default builds a single onefile binary. Set FS25_CONFIG_TOOL_BUILD_KINDS=both
-# to also build the onedir (installer) layout.
+# Windows installers are built separately via scripts/build_app.bat + Inno Setup.
 #
 # Outputs (example):
 #   dist/mac-apple-silicon/1.0.0/portable/FS25ConfigTool-1.0.0
@@ -42,12 +40,9 @@ else
   esac
 fi
 
-BUILD_KINDS="${FS25_CONFIG_TOOL_BUILD_KINDS:-portable}"
-
 echo
-echo "=== FS25 Config Tool — PyInstaller build (${PLATFORM}) ==="
+echo "=== FS25 Config Tool — portable build (${PLATFORM}) ==="
 echo "Working directory: $ROOT"
-echo "Build kinds: ${BUILD_KINDS}"
 echo
 
 if [[ ! -x .venv/bin/python ]]; then
@@ -69,62 +64,23 @@ APP_NAME="FS25ConfigTool-${VERSION}"
 echo "App version: ${VERSION}"
 echo
 
-COMMON_ARGS=(
-  --noconfirm
-  --clean
-  --windowed
-  --name "$APP_NAME"
-  --paths=.
-  --collect-all customtkinter
-)
+rm -rf "dist/${PLATFORM}/${VERSION}/portable" "build/${PLATFORM}/${VERSION}/portable"
+mkdir -p "dist/${PLATFORM}/${VERSION}/portable" "build/${PLATFORM}/${VERSION}/portable"
 
-build_portable() {
-  echo "Building portable (onefile) ..."
-  rm -rf "dist/${PLATFORM}/${VERSION}/portable" "build/${PLATFORM}/${VERSION}/portable"
-  mkdir -p "dist/${PLATFORM}/${VERSION}/portable" "build/${PLATFORM}/${VERSION}/portable"
-
-  pyinstaller "${COMMON_ARGS[@]}" \
-    --onefile \
-    --distpath "dist/${PLATFORM}/${VERSION}/portable" \
-    --workpath "build/${PLATFORM}/${VERSION}/portable" \
-    --specpath "build/${PLATFORM}/${VERSION}/portable" \
-    src/__main__.py
-
-  echo "  -> dist/${PLATFORM}/${VERSION}/portable/${APP_NAME}"
-}
-
-build_installer() {
-  echo "Building installer (onedir) ..."
-  rm -rf "dist/${PLATFORM}/${VERSION}/installer" "build/${PLATFORM}/${VERSION}/installer"
-  mkdir -p "dist/${PLATFORM}/${VERSION}/installer" "build/${PLATFORM}/${VERSION}/installer"
-
-  pyinstaller "${COMMON_ARGS[@]}" \
-    --onedir \
-    --distpath "dist/${PLATFORM}/${VERSION}/installer" \
-    --workpath "build/${PLATFORM}/${VERSION}/installer" \
-    --specpath "build/${PLATFORM}/${VERSION}/installer" \
-    src/__main__.py
-
-  echo "  -> dist/${PLATFORM}/${VERSION}/installer/${APP_NAME}/"
-}
-
-case "$BUILD_KINDS" in
-  portable)
-    build_portable
-    ;;
-  installer)
-    build_installer
-    ;;
-  both)
-    build_portable
-    build_installer
-    ;;
-  *)
-    echo "ERROR: FS25_CONFIG_TOOL_BUILD_KINDS must be portable, installer, or both (got: ${BUILD_KINDS})"
-    exit 1
-    ;;
-esac
+pyinstaller \
+  --noconfirm \
+  --clean \
+  --windowed \
+  --onefile \
+  --name "$APP_NAME" \
+  --paths=. \
+  --collect-all customtkinter \
+  --distpath "dist/${PLATFORM}/${VERSION}/portable" \
+  --workpath "build/${PLATFORM}/${VERSION}/portable" \
+  --specpath "build/${PLATFORM}/${VERSION}/portable" \
+  src/__main__.py
 
 echo
-echo "Build complete."
+echo "Build complete:"
+echo "  Portable: dist/${PLATFORM}/${VERSION}/portable/${APP_NAME}"
 echo
