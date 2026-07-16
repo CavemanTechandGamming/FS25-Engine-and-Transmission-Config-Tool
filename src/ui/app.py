@@ -19,6 +19,7 @@ except ImportError:
 from src import __version__
 from src.core.presets import PresetManager
 from src.core.xml_gen import XMLGenerator
+from src.ui.about import show_about
 
 class Tooltip:
     """
@@ -178,10 +179,26 @@ class FS25ConfigTool:
         main_frame = ctk.CTkFrame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Title
-        title_label = ctk.CTkLabel(main_frame, text="FS25 Engine and Transmission Config Tool",
-                                  font=ctk.CTkFont(size=20, weight="bold"))
-        title_label.pack(pady=(10, 20))
+        # Title row with About
+        header = ctk.CTkFrame(main_frame, fg_color="transparent")
+        header.pack(fill=tk.X, padx=10, pady=(10, 20))
+        header.grid_columnconfigure(0, weight=1)
+
+        title_label = ctk.CTkLabel(
+            header,
+            text="FS25 Engine and Transmission Config Tool",
+            font=ctk.CTkFont(size=20, weight="bold"),
+        )
+        title_label.grid(row=0, column=0, sticky="w")
+
+        about_btn = ctk.CTkButton(
+            header,
+            text="About",
+            width=80,
+            command=lambda: show_about(self.root),
+        )
+        about_btn.grid(row=0, column=1, sticky="e", padx=(10, 0))
+        Tooltip(about_btn, "About this app and support links")
         
         # Create notebook for tabs
         self.notebook = ctk.CTkTabview(main_frame)
@@ -205,10 +222,28 @@ class FS25ConfigTool:
         main_frame = tk.Frame(self.root, bg=self.colors['bg'])
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Title
-        title_label = tk.Label(main_frame, text="FS25 Engine and Transmission Config Tool",
-                              font=("Arial", 16, "bold"), bg=self.colors['bg'], fg=self.colors['fg'])
-        title_label.pack(pady=(0, 20))
+        # Title row with About
+        header = tk.Frame(main_frame, bg=self.colors['bg'])
+        header.pack(fill=tk.X, pady=(0, 20))
+
+        title_label = tk.Label(
+            header,
+            text="FS25 Engine and Transmission Config Tool",
+            font=("Arial", 16, "bold"),
+            bg=self.colors['bg'],
+            fg=self.colors['fg'],
+        )
+        title_label.pack(side=tk.LEFT)
+
+        about_btn = tk.Button(
+            header,
+            text="About",
+            command=lambda: show_about(self.root),
+            bg=self.colors.get('button', '#404040'),
+            fg=self.colors['fg'],
+        )
+        about_btn.pack(side=tk.RIGHT)
+        Tooltip(about_btn, "About this app and support links")
         
         # Create notebook for tabs
         notebook = ttk.Notebook(main_frame)
