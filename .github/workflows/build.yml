@@ -1,0 +1,188 @@
+# =============================================================================
+# FS25 Config Tool — manual multi-platform PyInstaller builds (artifacts only)
+# Trigger: Actions → Build → Run workflow
+# Also callable from the Build and Release workflow.
+#
+# Artifact examples (only Windows includes portable/installer):
+#   fs25-config-tool-windows-1.0.0-portable
+#   fs25-config-tool-windows-1.0.0-installer
+#   fs25-config-tool-mac-apple-silicon-1.0.0
+#   fs25-config-tool-mac-intel-1.0.0
+#   fs25-config-tool-ubuntu-1.0.0
+# =============================================================================
+name: Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      python_version:
+        description: "Python version (Windows / macOS)"
+        required: false
+        default: "3.14"
+        type: string
+  workflow_call:
+    inputs:
+      python_version:
+        description: "Python version (Windows / macOS)"
+        required: false
+        default: "3.14"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-desktop:
+    name: Build (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            label: Windows
+            upload_installer: true
+          - os: macos-15
+            platform: mac-apple-silicon
+            label: Mac Apple Silicon
+            upload_installer: false
+          - os: macos-15-intel
+            platform: mac-intel
+            label: Mac Intel
+            upload_installer: false
+
+    env:
+      FS25_CONFIG_TOOL_PLATFORM: ${{ matrix.platform }}
+      FS25_CONFIG_TOOL_BUILD_KINDS: portable
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ inputs.python_version }}
+          cache: pip
+          cache-dependency-path: requirements/requirements.txt
+
+      - name: Read app version
+        id: version
+        shell: bash
+        run: |
+          VERSION="$(python scripts/read_version.py)"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "App version: ${VERSION}"
+
+      - name: Setup env (Windows)
+        if: matrix.platform == 'windows'
+        shell: cmd
+        run: |
+          call scripts\setup_env.bat
+          if errorlevel 1 exit /b 1
+
+      - name: Build (Windows)
+        if: matrix.platform == 'windows'
+        shell: cmd
+        run: |
+          call scripts\build_app.bat
+          if errorlevel 1 exit /b 1
+
+      - name: Setup env + build (macOS)
+        if: startsWith(matrix.platform, 'mac-')
+        run: |
+          chmod +x scripts/setup_env.sh scripts/build_app.sh scripts/read_version.py
+          ./scripts/setup_env.sh
+          ./scripts/build_app.sh
+
+      - name: Upload Windows portable artifact
+        if: matrix.platform == 'windows'
+        uses: actions/upload-artifact@v7
+        with:
+          name: fs25-config-tool-windows-${{ steps.version.outputs.version }}-portable
+          path: dist/windows/${{ steps.version.outputs.version }}/portable/**
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Windows installer artifact
+        if: matrix.upload_installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: fs25-config-tool-windows-${{ steps.version.outputs.version }}-installer
+          path: dist/windows/${{ steps.version.outputs.version }}/installer/**
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Mac artifact
+        if: startsWith(matrix.platform, 'mac-')
+        uses: actions/upload-artifact@v7
+        with:
+          name: fs25-config-tool-${{ matrix.platform }}-${{ steps.version.outputs.version }}
+          path: dist/${{ matrix.platform }}/${{ steps.version.outputs.version }}/portable/**
+          if-no-files-found: error
+          retention-days: 30
+
+  build-linux:
+    name: Build (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+      options: --user root
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu
+            image: ubuntu:24.04
+            pkgs: apt
+          - platform: debian
+            image: debian:bookworm
+            pkgs: apt
+          - platform: mint
+            image: linuxmintd/mint22.1-amd64
+            pkgs: apt
+          - platform: fedora
+            image: fedora:latest
+            pkgs: dnf
+          - platform: arch
+            image: archlinux:latest
+            pkgs: pacman
+
+    env:
+      FS25_CONFIG_TOOL_PLATFORM: ${{ matrix.platform }}
+      FS25_CONFIG_TOOL_BUILD_KINDS: portable
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install distro build dependencies
+        run: |
+          chmod +x scripts/ci_install_linux_deps.sh scripts/setup_env.sh scripts/build_app.sh scripts/read_version.py
+          ./scripts/ci_install_linux_deps.sh "${{ matrix.pkgs }}"
+
+      - name: Read app version
+        id: version
+        run: |
+          VERSION="$(python3 scripts/read_version.py)"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "App version: ${VERSION}"
+
+      - name: Setup env
+        run: ./scripts/setup_env.sh
+
+      - name: Build with PyInstaller
+        run: ./scripts/build_app.sh
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: fs25-config-tool-${{ matrix.platform }}-${{ steps.version.outputs.version }}
+          path: dist/${{ matrix.platform }}/${{ steps.version.outputs.version }}/portable/**
+          if-no-files-found: error
+          retention-days: 30

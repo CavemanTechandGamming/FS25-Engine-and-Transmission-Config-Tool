@@ -1,0 +1,145 @@
+# =============================================================================
+# FS25 Config Tool — build all platforms, then publish a GitHub Release
+# Trigger: Actions → Build and Release → Run workflow
+#
+# Version tag/assets come from src/__init__.py (__version__).
+# Bump that value before running this workflow.
+#
+# Release zips (only Windows includes portable/installer):
+#   FS25ConfigTool-1.0.0-windows-portable.zip
+#   FS25ConfigTool-1.0.0-windows-installer.zip
+#   FS25ConfigTool-1.0.0-mac-apple-silicon.zip
+#   FS25ConfigTool-1.0.0-mac-intel.zip
+#   FS25ConfigTool-1.0.0-ubuntu.zip
+# =============================================================================
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      python_version:
+        description: "Python version"
+        required: false
+        default: "3.14"
+        type: string
+      draft:
+        description: "Create as draft release"
+        required: false
+        default: false
+        type: boolean
+      prerelease:
+        description: "Mark as pre-release"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/build.yml
+    with:
+      python_version: ${{ inputs.python_version }}
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Read app version
+        id: version
+        run: |
+          VERSION="$(python3 scripts/read_version.py)"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "App version: ${VERSION}"
+
+      - name: Ensure release tag does not already exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::Release ${TAG} already exists. Bump __version__ in src/__init__.py and re-run."
+            exit 1
+          fi
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: fs25-config-tool-*
+          path: artifacts
+
+      - name: Package versioned release assets
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p release-assets
+          shopt -s nullglob
+
+          for dir in artifacts/fs25-config-tool-*; do
+            [[ -d "$dir" ]] || continue
+            name="$(basename "$dir")"
+
+            if [[ "$name" =~ ^fs25-config-tool-windows-(.+)-(portable|installer)$ ]]; then
+              art_version="${BASH_REMATCH[1]}"
+              kind="${BASH_REMATCH[2]}"
+              zip_name="FS25ConfigTool-${VERSION}-windows-${kind}.zip"
+            elif [[ "$name" =~ ^fs25-config-tool-(mac-apple-silicon|mac-intel|ubuntu|debian|mint|fedora|arch)-(.+)$ ]]; then
+              platform="${BASH_REMATCH[1]}"
+              art_version="${BASH_REMATCH[2]}"
+              zip_name="FS25ConfigTool-${VERSION}-${platform}.zip"
+            else
+              echo "::error::Unexpected artifact name: ${name}"
+              exit 1
+            fi
+
+            if [[ "$art_version" != "$VERSION" ]]; then
+              echo "::error::Artifact version ${art_version} does not match src __version__ ${VERSION}"
+              exit 1
+            fi
+
+            (cd "$dir" && zip -r -9 "$GITHUB_WORKSPACE/release-assets/${zip_name}" .)
+            echo "Created ${zip_name}"
+          done
+
+          count="$(find release-assets -type f -name '*.zip' | wc -l)"
+          if [[ "$count" -lt 1 ]]; then
+            echo "::error::No release zips were created."
+            exit 1
+          fi
+
+          echo "Release assets:"
+          ls -lah release-assets
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.version.outputs.tag }}"
+          VERSION="${{ steps.version.outputs.version }}"
+
+          EXTRA_FLAGS=()
+          if [[ "${{ inputs.draft }}" == "true" ]]; then
+            EXTRA_FLAGS+=(--draft)
+          fi
+          if [[ "${{ inputs.prerelease }}" == "true" ]]; then
+            EXTRA_FLAGS+=(--prerelease)
+          fi
+
+          gh release create "$TAG" \
+            --title "FS25 Config Tool ${VERSION}" \
+            --generate-notes \
+            "${EXTRA_FLAGS[@]}" \
+            release-assets/*
