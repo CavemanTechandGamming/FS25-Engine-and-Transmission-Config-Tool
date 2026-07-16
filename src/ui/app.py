@@ -667,255 +667,260 @@ class FS25ConfigTool:
             self.setup_standard_output_tab(parent)
     
     def setup_custom_output_tab(self, parent):
-        """Set up output tab using CustomTkinter widgets."""
-        # Action buttons frame - Compact Layout
-        button_frame = ctk.CTkFrame(parent)
-        button_frame.pack(fill=tk.X, padx=10, pady=5)
-        
-        # Top row - Engine and Transmission
-        top_row = ctk.CTkFrame(button_frame)
-        top_row.pack(fill=tk.X, padx=5, pady=2)
-        
-        # Engine Actions
-        engine_label = ctk.CTkLabel(top_row, text="Engine:", 
-                                   font=ctk.CTkFont(size=11, weight="bold"))
-        engine_label.pack(side=tk.LEFT, padx=(10, 5), pady=5)
-        
-        ctk.CTkButton(top_row, text="Generate",
-                     command=self.generate_engine_xml, width=70).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        ctk.CTkButton(top_row, text="Copy",
-                     command=self.copy_engine_xml, width=70).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        ctk.CTkButton(top_row, text="Save",
-                     command=self.save_engine_xml, width=70).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        # Transmission Actions
-        trans_label = ctk.CTkLabel(top_row, text="Transmission:", 
-                                  font=ctk.CTkFont(size=11, weight="bold"))
-        trans_label.pack(side=tk.LEFT, padx=(20, 5), pady=5)
-        
-        ctk.CTkButton(top_row, text="Generate",
-                     command=self.generate_transmission_xml, width=70).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        ctk.CTkButton(top_row, text="Copy",
-                     command=self.copy_transmission_xml, width=70).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        ctk.CTkButton(top_row, text="Save",
-                     command=self.save_transmission_xml, width=70).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        # Bottom row - Presets and Combined
-        bottom_row = ctk.CTkFrame(button_frame)
-        bottom_row.pack(fill=tk.X, padx=5, pady=2)
-        
-        # Preset Actions
-        preset_label = ctk.CTkLabel(bottom_row, text="Presets:", 
-                                   font=ctk.CTkFont(size=11, weight="bold"))
-        preset_label.pack(side=tk.LEFT, padx=(10, 5), pady=5)
-        
-        ctk.CTkButton(bottom_row, text="Save",
-                     command=self.save_current_preset, width=70).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        ctk.CTkButton(bottom_row, text="Load",
-                     command=self.load_current_preset, width=70).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        ctk.CTkButton(bottom_row, text="Add",
-                     command=self.add_to_presets, width=70).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        # Combined Actions
-        combined_label = ctk.CTkLabel(bottom_row, text="Combined:", 
-                                     font=ctk.CTkFont(size=11, weight="bold"))
-        combined_label.pack(side=tk.LEFT, padx=(20, 5), pady=5)
-        
-        ctk.CTkButton(bottom_row, text="Generate",
-                     command=self.generate_both_xml, width=70).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        ctk.CTkButton(bottom_row, text="Save",
-                     command=self.save_both_xml, width=70).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        # XML preview frame
+        """Set up output panel: clean action bar + XML preview."""
+        toolbar = ctk.CTkFrame(parent, fg_color="transparent")
+        toolbar.pack(fill=tk.X, padx=10, pady=(8, 4))
+        toolbar.grid_columnconfigure(0, weight=1)
+        toolbar.grid_columnconfigure(1, weight=0)
+
+        primary = ctk.CTkFrame(toolbar, fg_color="transparent")
+        primary.grid(row=0, column=0, sticky="w")
+
+        generate_btn = ctk.CTkButton(
+            primary,
+            text="Generate XML",
+            width=130,
+            command=self.generate_both_xml,
+        )
+        generate_btn.pack(side=tk.LEFT, padx=(0, 8))
+        Tooltip(generate_btn, "Generate combined FS25 engine + transmission XML")
+
+        copy_btn = ctk.CTkButton(
+            primary,
+            text="Copy",
+            width=90,
+            fg_color=("gray70", "gray35"),
+            hover_color=("gray60", "gray30"),
+            command=self.copy_generated_xml,
+        )
+        copy_btn.pack(side=tk.LEFT, padx=(0, 8))
+        Tooltip(copy_btn, "Copy the combined FS25 XML to the clipboard")
+
+        save_btn = ctk.CTkButton(
+            primary,
+            text="Save…",
+            width=90,
+            fg_color=("gray70", "gray35"),
+            hover_color=("gray60", "gray30"),
+            command=self.save_both_xml,
+        )
+        save_btn.pack(side=tk.LEFT)
+        Tooltip(save_btn, "Save combined FS25 XML (and separate engine/transmission files)")
+
+        presets = ctk.CTkFrame(toolbar, fg_color="transparent")
+        presets.grid(row=0, column=1, sticky="e")
+
+        preset_label = ctk.CTkLabel(
+            presets,
+            text="Presets",
+            font=ctk.CTkFont(size=12),
+            text_color="gray65",
+        )
+        preset_label.pack(side=tk.LEFT, padx=(0, 8))
+
+        save_preset_btn = ctk.CTkButton(
+            presets,
+            text="Save",
+            width=70,
+            fg_color=("gray70", "gray35"),
+            hover_color=("gray60", "gray30"),
+            command=self.save_current_preset,
+        )
+        save_preset_btn.pack(side=tk.LEFT, padx=(0, 6))
+        Tooltip(save_preset_btn, "Save current settings to a JSON preset file")
+
+        load_preset_btn = ctk.CTkButton(
+            presets,
+            text="Load",
+            width=70,
+            fg_color=("gray70", "gray35"),
+            hover_color=("gray60", "gray30"),
+            command=self.load_current_preset,
+        )
+        load_preset_btn.pack(side=tk.LEFT, padx=(0, 6))
+        Tooltip(load_preset_btn, "Load settings from a JSON preset file")
+
+        add_preset_btn = ctk.CTkButton(
+            presets,
+            text="Add",
+            width=70,
+            fg_color=("gray70", "gray35"),
+            hover_color=("gray60", "gray30"),
+            command=self.add_to_presets,
+        )
+        add_preset_btn.pack(side=tk.LEFT)
+        Tooltip(add_preset_btn, "Add current settings to the in-app preset list")
+
         preview_frame = ctk.CTkFrame(parent)
-        preview_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-        
-        preview_label = ctk.CTkLabel(preview_frame, text="XML Preview",
-                                    font=ctk.CTkFont(size=14, weight="bold"))
-        preview_label.pack(pady=5)
-        
-        # Create a frame for the text area with scrollbars
+        preview_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(4, 8))
+
+        preview_header = ctk.CTkFrame(preview_frame, fg_color="transparent")
+        preview_header.pack(fill=tk.X, padx=10, pady=(8, 0))
+        preview_label = ctk.CTkLabel(
+            preview_header,
+            text="XML Preview",
+            font=ctk.CTkFont(size=14, weight="bold"),
+        )
+        preview_label.pack(side=tk.LEFT)
+
         text_frame = ctk.CTkFrame(preview_frame)
         text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Create line numbers widget
-        self.line_numbers = tk.Text(text_frame, 
-                                   bg=self.colors['bg'],
-                                   fg=self.colors['secondary_fg'],
-                                   font=("Consolas", 9),
-                                   width=4,
-                                   padx=5,
-                                   pady=5,
-                                   relief=tk.FLAT,
-                                   state=tk.DISABLED)
-        
-        # XML text area with both scrollbars
-        self.xml_text = tk.Text(text_frame, 
-                               bg=self.colors['input_bg'],
-                               fg=self.colors['fg'],
-                               font=("Consolas", 9),
-                               wrap=tk.NONE,
-                               insertbackground=self.colors['fg'],
-                               padx=5,
-                               pady=5)
-        
-        # Scrollbars
+
+        self.line_numbers = tk.Text(
+            text_frame,
+            bg=self.colors['bg'],
+            fg=self.colors['secondary_fg'],
+            font=("Consolas", 9),
+            width=4,
+            padx=5,
+            pady=5,
+            relief=tk.FLAT,
+            state=tk.DISABLED,
+        )
+
+        self.xml_text = tk.Text(
+            text_frame,
+            bg=self.colors['input_bg'],
+            fg=self.colors['fg'],
+            font=("Consolas", 9),
+            wrap=tk.NONE,
+            insertbackground=self.colors['fg'],
+            padx=5,
+            pady=5,
+        )
+
         v_scrollbar = tk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self._on_scroll)
         h_scrollbar = tk.Scrollbar(text_frame, orient=tk.HORIZONTAL, command=self.xml_text.xview)
         self.xml_text.configure(yscrollcommand=self._on_scroll, xscrollcommand=h_scrollbar.set)
-        
-        # Pack the text area and scrollbars
+
         v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
         self.line_numbers.pack(side=tk.LEFT, fill=tk.Y)
         self.xml_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        
-        # Configure XML syntax highlighting
+
         self.setup_xml_syntax_highlighting()
-    
+
     def setup_standard_output_tab(self, parent):
-        """Set up output tab using standard Tkinter widgets."""
-        # Action buttons frame
-        button_frame = tk.Frame(parent, bg=self.colors['bg'])
-        button_frame.pack(fill=tk.X, padx=10, pady=5)
-        
-        # Top row - Engine and Transmission
-        top_row = tk.Frame(button_frame, bg=self.colors['bg'])
-        top_row.pack(fill=tk.X, padx=5, pady=2)
-        
-        # Engine Actions
-        engine_label = tk.Label(top_row, text="Engine:", 
-                               bg=self.colors['bg'], fg=self.colors['fg'],
-                               font=("Arial", 10, "bold"))
-        engine_label.pack(side=tk.LEFT, padx=(10, 5), pady=5)
-        
-        tk.Button(top_row, text="Generate",
-                 command=self.generate_engine_xml,
-                 bg=self.colors['button_bg'], fg=self.colors['fg'],
-                 relief=tk.RAISED, borderwidth=1, width=8).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        tk.Button(top_row, text="Copy",
-                 command=self.copy_engine_xml,
-                 bg=self.colors['button_bg'], fg=self.colors['fg'],
-                 relief=tk.RAISED, borderwidth=1, width=8).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        tk.Button(top_row, text="Save",
-                 command=self.save_engine_xml,
-                 bg=self.colors['button_bg'], fg=self.colors['fg'],
-                 relief=tk.RAISED, borderwidth=1, width=8).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        # Transmission Actions
-        trans_label = tk.Label(top_row, text="Transmission:", 
-                              bg=self.colors['bg'], fg=self.colors['fg'],
-                              font=("Arial", 10, "bold"))
-        trans_label.pack(side=tk.LEFT, padx=(20, 5), pady=5)
-        
-        tk.Button(top_row, text="Generate",
-                 command=self.generate_transmission_xml,
-                 bg=self.colors['button_bg'], fg=self.colors['fg'],
-                 relief=tk.RAISED, borderwidth=1, width=8).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        tk.Button(top_row, text="Copy",
-                 command=self.copy_transmission_xml,
-                 bg=self.colors['button_bg'], fg=self.colors['fg'],
-                 relief=tk.RAISED, borderwidth=1, width=8).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        tk.Button(top_row, text="Save",
-                 command=self.save_transmission_xml,
-                 bg=self.colors['button_bg'], fg=self.colors['fg'],
-                 relief=tk.RAISED, borderwidth=1, width=8).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        # Bottom row - Presets and Combined
-        bottom_row = tk.Frame(button_frame, bg=self.colors['bg'])
-        bottom_row.pack(fill=tk.X, padx=5, pady=2)
-        
-        # Preset Actions
-        preset_label = tk.Label(bottom_row, text="Presets:", 
-                               bg=self.colors['bg'], fg=self.colors['fg'],
-                               font=("Arial", 10, "bold"))
-        preset_label.pack(side=tk.LEFT, padx=(10, 5), pady=5)
-        
-        tk.Button(bottom_row, text="Save",
-                 command=self.save_current_preset,
-                 bg=self.colors['button_bg'], fg=self.colors['fg'],
-                 relief=tk.RAISED, borderwidth=1, width=8).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        tk.Button(bottom_row, text="Load",
-                 command=self.load_current_preset,
-                 bg=self.colors['button_bg'], fg=self.colors['fg'],
-                 relief=tk.RAISED, borderwidth=1, width=8).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        tk.Button(bottom_row, text="Add",
-                 command=self.add_to_presets,
-                 bg=self.colors['button_bg'], fg=self.colors['fg'],
-                 relief=tk.RAISED, borderwidth=1, width=8).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        # Combined Actions
-        combined_label = tk.Label(bottom_row, text="Combined:", 
-                                 bg=self.colors['bg'], fg=self.colors['fg'],
-                                 font=("Arial", 10, "bold"))
-        combined_label.pack(side=tk.LEFT, padx=(20, 5), pady=5)
-        
-        tk.Button(bottom_row, text="Generate",
-                 command=self.generate_both_xml,
-                 bg=self.colors['button_bg'], fg=self.colors['fg'],
-                 relief=tk.RAISED, borderwidth=1, width=8).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        tk.Button(bottom_row, text="Save",
-                 command=self.save_both_xml,
-                 bg=self.colors['button_bg'], fg=self.colors['fg'],
-                 relief=tk.RAISED, borderwidth=1, width=8).pack(side=tk.LEFT, padx=2, pady=5)
-        
-        # XML preview frame
-        preview_frame = tk.LabelFrame(parent, text="XML Preview",
-                                    bg=self.colors['bg'], fg=self.colors['fg'],
-                                    font=("Arial", 10, "bold"))
-        preview_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-        
-        # Create a frame for the text area with scrollbars
+        """Set up output panel using standard Tkinter widgets."""
+        toolbar = tk.Frame(parent, bg=self.colors['bg'])
+        toolbar.pack(fill=tk.X, padx=10, pady=(8, 4))
+
+        primary = tk.Frame(toolbar, bg=self.colors['bg'])
+        primary.pack(side=tk.LEFT)
+
+        generate_btn = tk.Button(
+            primary,
+            text="Generate XML",
+            command=self.generate_both_xml,
+            bg=self.colors['button_bg'],
+            fg=self.colors['fg'],
+            relief=tk.RAISED,
+            borderwidth=1,
+            font=("Arial", 10, "bold"),
+            padx=10,
+        )
+        generate_btn.pack(side=tk.LEFT, padx=(0, 8))
+        Tooltip(generate_btn, "Generate combined FS25 engine + transmission XML")
+
+        copy_btn = tk.Button(
+            primary,
+            text="Copy",
+            command=self.copy_generated_xml,
+            bg=self.colors['button_bg'],
+            fg=self.colors['fg'],
+            relief=tk.RAISED,
+            borderwidth=1,
+            width=10,
+        )
+        copy_btn.pack(side=tk.LEFT, padx=(0, 8))
+        Tooltip(copy_btn, "Copy the combined FS25 XML to the clipboard")
+
+        save_btn = tk.Button(
+            primary,
+            text="Save…",
+            command=self.save_both_xml,
+            bg=self.colors['button_bg'],
+            fg=self.colors['fg'],
+            relief=tk.RAISED,
+            borderwidth=1,
+            width=10,
+        )
+        save_btn.pack(side=tk.LEFT)
+        Tooltip(save_btn, "Save combined FS25 XML (and separate engine/transmission files)")
+
+        presets = tk.Frame(toolbar, bg=self.colors['bg'])
+        presets.pack(side=tk.RIGHT)
+
+        tk.Label(
+            presets,
+            text="Presets",
+            bg=self.colors['bg'],
+            fg=self.colors['secondary_fg'],
+            font=("Arial", 9),
+        ).pack(side=tk.LEFT, padx=(0, 8))
+
+        for text, cmd, tip in (
+            ("Save", self.save_current_preset, "Save current settings to a JSON preset file"),
+            ("Load", self.load_current_preset, "Load settings from a JSON preset file"),
+            ("Add", self.add_to_presets, "Add current settings to the in-app preset list"),
+        ):
+            btn = tk.Button(
+                presets,
+                text=text,
+                command=cmd,
+                bg=self.colors['button_bg'],
+                fg=self.colors['fg'],
+                relief=tk.RAISED,
+                borderwidth=1,
+                width=8,
+            )
+            btn.pack(side=tk.LEFT, padx=(0, 6))
+            Tooltip(btn, tip)
+
+        preview_frame = tk.LabelFrame(
+            parent,
+            text="XML Preview",
+            bg=self.colors['bg'],
+            fg=self.colors['fg'],
+            font=("Arial", 10, "bold"),
+        )
+        preview_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(4, 8))
+
         text_frame = tk.Frame(preview_frame, bg=self.colors['input_bg'])
         text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Create line numbers widget
-        self.line_numbers = tk.Text(text_frame, 
-                                   bg=self.colors['bg'],
-                                   fg=self.colors['secondary_fg'],
-                                   font=("Consolas", 9),
-                                   width=4,
-                                   padx=5,
-                                   pady=5,
-                                   relief=tk.FLAT,
-                                   state=tk.DISABLED)
-        
-        # XML text area with both scrollbars
-        self.xml_text = tk.Text(text_frame, 
-                               bg=self.colors['input_bg'],
-                               fg=self.colors['fg'],
-                               font=("Consolas", 9),
-                               wrap=tk.NONE,
-                               insertbackground=self.colors['fg'],
-                               padx=5,
-                               pady=5)
-        
-        # Scrollbars
+
+        self.line_numbers = tk.Text(
+            text_frame,
+            bg=self.colors['bg'],
+            fg=self.colors['secondary_fg'],
+            font=("Consolas", 9),
+            width=4,
+            padx=5,
+            pady=5,
+            relief=tk.FLAT,
+            state=tk.DISABLED,
+        )
+
+        self.xml_text = tk.Text(
+            text_frame,
+            bg=self.colors['input_bg'],
+            fg=self.colors['fg'],
+            font=("Consolas", 9),
+            wrap=tk.NONE,
+            insertbackground=self.colors['fg'],
+            padx=5,
+            pady=5,
+        )
+
         v_scrollbar = tk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self._on_scroll)
         h_scrollbar = tk.Scrollbar(text_frame, orient=tk.HORIZONTAL, command=self.xml_text.xview)
         self.xml_text.configure(yscrollcommand=self._on_scroll, xscrollcommand=h_scrollbar.set)
-        
-        # Pack the text area and scrollbars
+
         v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
         self.line_numbers.pack(side=tk.LEFT, fill=tk.Y)
         self.xml_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        
-        # Configure XML syntax highlighting
+
         self.setup_xml_syntax_highlighting()
     
     def create_input_field(self, parent, label_text, variable, tooltip_text):
@@ -1271,6 +1276,24 @@ class FS25ConfigTool:
             messagebox.showerror("Validation Error", f"Invalid input data: {str(e)}")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to generate combined XML: {str(e)}")
+
+    def copy_generated_xml(self):
+        """Copy combined FS25 XML to the clipboard (same output as Generate XML)."""
+        try:
+            engine_data = self.get_engine_data()
+            transmission_data = self.get_transmission_data()
+            xml = XMLGenerator.generate_combined_fs25_xml(engine_data, transmission_data)
+            self.highlight_xml_syntax(xml)
+            try:
+                self.root.clipboard_clear()
+                self.root.clipboard_append(xml)
+                messagebox.showinfo("Success", "FS25 XML copied to clipboard")
+            except tk.TclError as e:
+                messagebox.showerror("Error", f"Failed to access clipboard: {str(e)}")
+        except ValueError as e:
+            messagebox.showerror("Validation Error", f"Invalid input data: {str(e)}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to copy XML: {str(e)}")
     
     def save_both_xml(self):
         """Save both engine and transmission XML to separate files."""

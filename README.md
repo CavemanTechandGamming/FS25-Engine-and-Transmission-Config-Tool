@@ -48,8 +48,8 @@ Desktop app for generating Farming Simulator 25 engine and transmission XML conf
 
 1. Configure the **engine** on the left (or pick a preset).
 2. Configure the **transmission** on the right (type, gears, top speed, optional low gearing).
-3. Use the actions under the panels to generate engine, transmission, or combined FS25 XML.
-4. Preview, copy, or save the XML from the bottom of the window for your mod.
+3. Click **Generate XML** to build the combined FS25 motor configuration.
+4. **Copy** or **Save** the preview for your mod.
 
 ### Built-in presets
 
