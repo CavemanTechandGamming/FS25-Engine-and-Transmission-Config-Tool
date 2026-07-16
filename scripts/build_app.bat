@@ -53,11 +53,14 @@ if exist "build\%PLATFORM%\%VERSION%\portable" rmdir /s /q "build\%PLATFORM%\%VE
 mkdir "%PORTABLE_DIR%" 2>nul
 mkdir "build\%PLATFORM%\%VERSION%\portable" 2>nul
 
+set "ICON_ICO=%CD%\assets\app_icon.ico"
+set "ICON_PNG=%CD%\assets\app_icon_256.png"
+
 python -m PyInstaller --noconfirm --clean --windowed --onefile ^
   --name "%APP_NAME%" --paths=. --collect-all customtkinter ^
-  --icon "assets\app_icon.ico" ^
-  --add-data "assets\app_icon_256.png;assets" ^
-  --add-data "assets\app_icon.ico;assets" ^
+  --icon "%ICON_ICO%" ^
+  --add-data "%ICON_PNG%;assets" ^
+  --add-data "%ICON_ICO%;assets" ^
   --distpath "%PORTABLE_DIR%" ^
   --workpath "build\%PLATFORM%\%VERSION%\portable" ^
   --specpath "build\%PLATFORM%\%VERSION%\portable" ^

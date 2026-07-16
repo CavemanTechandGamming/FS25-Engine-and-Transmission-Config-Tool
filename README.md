@@ -13,9 +13,13 @@ Desktop app for generating Farming Simulator 25 engine and transmission XML conf
 
 ![Main window](docs/images/main-window.png)
 
-![Engine settings](docs/images/engine-settings.png)
+![Settings](docs/images/settings.png)
 
-![XML output](docs/images/xml-output.png)
+![Engine presets](docs/images/engine-presets.png)
+
+![Transmission presets](docs/images/transmission-presets.png)
+
+![XML preview](docs/images/xml-preview.png)
 
 ---
 
@@ -24,7 +28,8 @@ Desktop app for generating Farming Simulator 25 engine and transmission XML conf
 - Dark-mode GUI (CustomTkinter, with Tkinter fallback)
 - Engine setup with auto-generated torque curves (turbo and naturally aspirated)
 - Transmission support: Manual, Automatic, CVT, PowerShift
-- Built-in engine and transmission presets, plus save/load for custom configs
+- Built-in presets plus **custom** engine/transmission presets (saved next to the app by default)
+- Settings for preset folder location, startup defaults, and log access
 - FS25-compatible XML export with syntax-highlighted preview
 - Copy to clipboard and portable multi-platform builds
 
@@ -46,10 +51,11 @@ Desktop app for generating Farming Simulator 25 engine and transmission XML conf
 
 ## How to use
 
-1. Configure the **engine** on the left (or pick a preset).
-2. Configure the **transmission** on the right (type, gears, top speed, optional low gearing).
-3. Click **Generate XML** to build the combined FS25 motor configuration.
-4. **Copy** or **Save** the preview for your mod.
+1. Configure the **engine** (top-left) — pick a preset or edit fields, then **Save** if you want a custom engine preset.
+2. Configure the **transmission** (bottom-left) the same way.
+3. Click **Generate XML** to build the combined FS25 motor configuration (preview on the right).
+4. **Copy** or **Save…** the preview for your mod.
+5. Optional: open **Settings** to set the custom-presets folder and default presets for next launch.
 
 ### Built-in presets
 

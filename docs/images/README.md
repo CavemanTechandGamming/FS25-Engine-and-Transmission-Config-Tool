@@ -1,15 +1,21 @@
 # Image assets
 
-Drop screenshots and other marketing / docs images here.
+Drop screenshots here using **these exact filenames** (the root [`README.md`](../../README.md) links to them).
 
-Suggested filenames (used by the root `README.md`):
+## Required filenames
 
-| File | Suggested content |
-|------|-------------------|
+| Filename | What you captured |
+|----------|-------------------|
 | `main-window.png` | Full app window |
-| `engine-settings.png` | Engine configuration tab / presets |
-| `xml-output.png` | XML preview / output tab |
+| `settings.png` | Settings dialog |
+| `engine-presets.png` | Engine preset row (dropdown + Load / Save) |
+| `transmission-presets.png` | Transmission preset row (dropdown + Load / Save) |
+| `xml-preview.png` | XML preview pane |
 
-Use PNG or WebP. Keep widths around 1200–1600px so they look sharp on GitHub.
+## Guidelines
 
-Until screenshots are added, the README image links will show as broken — that is expected.
+- **Format:** PNG
+- **Width:** about **1200–1600px** if possible
+- Place files directly in this folder: `docs/images/`
+
+Until all five files are present, some README images may show as broken — that is expected.
