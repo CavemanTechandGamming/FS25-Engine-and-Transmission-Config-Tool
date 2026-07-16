@@ -94,12 +94,14 @@ python -m src
 Windows builds a **portable onefile `.exe`** and a **real Inno Setup installer** (single Setup `.exe`).
 Linux and Mac build a portable onefile binary only.
 
+Artifact display name (no abbreviations): **FS25 Engine and Transmission Config Tool**
+
 | Type | Example |
 |------|---------|
-| Windows portable | `dist/windows/1.0.0/portable/FS25ConfigTool-1.0.0.exe` |
-| Windows installer | `dist/windows/1.0.0/installer/FS25ConfigTool-1.0.0-Setup.exe` |
-| Mac Apple Silicon | `dist/mac-apple-silicon/1.0.0/portable/FS25ConfigTool-1.0.0` |
-| Mac Intel | `dist/mac-intel/1.0.0/portable/FS25ConfigTool-1.0.0` |
+| Windows portable | `dist/windows/1.0.0/portable/FS25 Engine and Transmission Config Tool.exe` |
+| Windows installer | `dist/windows/1.0.0/installer/FS25 Engine and Transmission Config Tool-1.0.0-Setup.exe` |
+| Mac Apple Silicon | `dist/mac-apple-silicon/1.0.0/portable/FS25 Engine and Transmission Config Tool` |
+| Mac Intel | `dist/mac-intel/1.0.0/portable/FS25 Engine and Transmission Config Tool` |
 
 **Windows prerequisites:** [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`ISCC.exe`), or `choco install innosetup -y`.
 
@@ -118,7 +120,7 @@ Two manual workflows (no push/PR triggers):
 | Workflow | File | What it does |
 |----------|------|----------------|
 | **Build** | [`.github/workflows/build.yml`](.github/workflows/build.yml) | Matrix build → upload versioned artifacts |
-| **Build and Release** | [`.github/workflows/release.yml`](.github/workflows/release.yml) | Same builds → GitHub Release with bare binaries |
+| **Build and Release** | [`.github/workflows/release.yml`](.github/workflows/release.yml) | Same builds → GitHub Release |
 
 Windows/macOS default to Python **3.14**. Linux builds use each distro’s system Python in containers.
 
@@ -159,13 +161,13 @@ gh run download
 
 1. Bump `__version__` in `src/__init__.py`, update `CHANGELOG.md`, and push to `main`
 2. Actions → **Build and Release** → **Run workflow**
-3. Creates tag `vX.Y.Z` and attaches bare binaries such as:
+3. Creates tag `vX.Y.Z` and attaches:
 
-   - `FS25ConfigTool-1.0.0-windows-portable.exe`
-   - `FS25ConfigTool-1.0.0-windows-setup.exe`
-   - `FS25ConfigTool-1.0.0-mac-apple-silicon`
-   - `FS25ConfigTool-1.0.0-mac-intel`
-   - `FS25ConfigTool-1.0.0-ubuntu`
+   - `FS25 Engine and Transmission Config Tool-1.0.0-windows-portable.zip` (**only** zip)
+   - `FS25 Engine and Transmission Config Tool-1.0.0-windows-setup.exe`
+   - `FS25 Engine and Transmission Config Tool-1.0.0-mac-apple-silicon`
+   - `FS25 Engine and Transmission Config Tool-1.0.0-mac-intel`
+   - `FS25 Engine and Transmission Config Tool-1.0.0-ubuntu`
    - (same pattern for `debian`, `mint`, `fedora`, `arch`)
 
 Optional inputs: **draft**, **prerelease**.

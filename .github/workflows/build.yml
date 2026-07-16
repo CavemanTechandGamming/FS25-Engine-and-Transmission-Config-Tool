@@ -4,7 +4,7 @@
 # Also callable from the Build and Release workflow.
 #
 # Artifact examples:
-#   fs25-config-tool-windows-1.0.0-portable   → single .exe
+#   fs25-config-tool-windows-1.0.0-portable   → single .exe (zipped only at release)
 #   fs25-config-tool-windows-1.0.0-installer  → single Setup.exe (Inno Setup)
 #   fs25-config-tool-mac-apple-silicon-1.0.0  → single binary
 #   fs25-config-tool-ubuntu-1.0.0             → single binary
@@ -111,7 +111,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: fs25-config-tool-windows-${{ steps.version.outputs.version }}-portable
-          path: dist/windows/${{ steps.version.outputs.version }}/portable/*.exe
+          path: dist/windows/${{ steps.version.outputs.version }}/portable/
           if-no-files-found: error
           retention-days: 30
 
@@ -120,7 +120,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: fs25-config-tool-windows-${{ steps.version.outputs.version }}-installer
-          path: dist/windows/${{ steps.version.outputs.version }}/installer/*-Setup.exe
+          path: dist/windows/${{ steps.version.outputs.version }}/installer/
           if-no-files-found: error
           retention-days: 30
 
@@ -129,7 +129,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: fs25-config-tool-${{ matrix.platform }}-${{ steps.version.outputs.version }}
-          path: dist/${{ matrix.platform }}/${{ steps.version.outputs.version }}/portable/FS25ConfigTool-*
+          path: dist/${{ matrix.platform }}/${{ steps.version.outputs.version }}/portable/
           if-no-files-found: error
           retention-days: 30
 
@@ -188,6 +188,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: fs25-config-tool-${{ matrix.platform }}-${{ steps.version.outputs.version }}
-          path: dist/${{ matrix.platform }}/${{ steps.version.outputs.version }}/portable/FS25ConfigTool-*
+          path: dist/${{ matrix.platform }}/${{ steps.version.outputs.version }}/portable/
           if-no-files-found: error
           retention-days: 30

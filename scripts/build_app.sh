@@ -6,13 +6,15 @@
 # Windows installers are built separately via scripts/build_app.bat + Inno Setup.
 #
 # Outputs (example):
-#   dist/mac-apple-silicon/1.0.0/portable/FS25ConfigTool-1.0.0
-#   dist/ubuntu/1.0.0/portable/FS25ConfigTool-1.0.0
+#   dist/mac-apple-silicon/1.0.0/portable/FS25 Engine and Transmission Config Tool
+#   dist/ubuntu/1.0.0/portable/FS25 Engine and Transmission Config Tool
 # ──────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+
+APP_NAME="FS25 Engine and Transmission Config Tool"
 
 if [[ -n "${FS25_CONFIG_TOOL_PLATFORM:-}" ]]; then
   PLATFORM="$FS25_CONFIG_TOOL_PLATFORM"
@@ -41,7 +43,7 @@ else
 fi
 
 echo
-echo "=== FS25 Config Tool — portable build (${PLATFORM}) ==="
+echo "=== ${APP_NAME} — portable build (${PLATFORM}) ==="
 echo "Working directory: $ROOT"
 echo
 
@@ -60,7 +62,6 @@ if ! command -v pyinstaller >/dev/null 2>&1; then
 fi
 
 VERSION="$(python scripts/read_version.py)"
-APP_NAME="FS25ConfigTool-${VERSION}"
 echo "App version: ${VERSION}"
 echo
 

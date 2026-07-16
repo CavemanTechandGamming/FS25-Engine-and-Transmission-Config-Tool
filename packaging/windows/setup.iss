@@ -1,30 +1,30 @@
 ; =============================================================================
-; FS25 Config Tool — Windows installer (Inno Setup 6)
+; FS25 Engine and Transmission Config Tool — Windows installer (Inno Setup 6)
 ;
 ; Defines (passed by scripts/build_app.bat / CI):
 ;   MyAppVersion          e.g. 1.0.0
 ;   SourceExe             full path to the portable onefile .exe
 ;   OutputDir             folder for the Setup .exe
-;   OutputBaseFilename    e.g. FS25ConfigTool-1.0.0-Setup
+;   OutputBaseFilename    e.g. FS25 Engine and Transmission Config Tool-1.0.0-Setup
 ; =============================================================================
 
 #ifndef MyAppVersion
   #define MyAppVersion "0.0.0"
 #endif
 #ifndef SourceExe
-  #define SourceExe "FS25ConfigTool.exe"
+  #define SourceExe "FS25 Engine and Transmission Config Tool.exe"
 #endif
 #ifndef OutputDir
   #define OutputDir "."
 #endif
 #ifndef OutputBaseFilename
-  #define OutputBaseFilename "FS25ConfigTool-Setup"
+  #define OutputBaseFilename "FS25 Engine and Transmission Config Tool-Setup"
 #endif
 
 #define MyAppName "FS25 Engine and Transmission Config Tool"
 #define MyAppPublisher "CavemanTechandGamming"
 #define MyAppURL "https://github.com/CavemanTechandGamming/FS25-Engine-and-Transmission-Config-Tool"
-#define MyAppExeName "FS25ConfigTool.exe"
+#define MyAppExeName "FS25 Engine and Transmission Config Tool.exe"
 
 [Setup]
 ; Fixed AppId so upgrades / uninstall stay consistent across versions
@@ -36,8 +36,8 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}/issues
 AppUpdatesURL={#MyAppURL}/releases
-DefaultDirName={autopf}\FS25 Config Tool
-DefaultGroupName=FS25 Config Tool
+DefaultDirName={autopf}\{#MyAppName}
+DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 LicenseFile=..\..\LICENSE
 OutputDir={#OutputDir}
@@ -61,7 +61,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-; Install the portable onefile binary under a stable name
 Source: "{#SourceExe}"; DestDir: "{app}"; DestName: "{#MyAppExeName}"; Flags: ignoreversion
 
 [Icons]

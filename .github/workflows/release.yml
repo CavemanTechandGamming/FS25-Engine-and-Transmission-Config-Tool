@@ -1,16 +1,16 @@
 # =============================================================================
-# FS25 Config Tool — build all platforms, then publish a GitHub Release
+# FS25 Engine and Transmission Config Tool — build + GitHub Release
 # Trigger: Actions → Build and Release → Run workflow
 #
 # Version tag/assets come from src/__init__.py (__version__).
 # Bump that value before running this workflow.
 #
-# Release assets (single files — not zip-wrapped folders):
-#   FS25ConfigTool-1.0.0-windows-portable.exe
-#   FS25ConfigTool-1.0.0-windows-setup.exe
-#   FS25ConfigTool-1.0.0-mac-apple-silicon
-#   FS25ConfigTool-1.0.0-mac-intel
-#   FS25ConfigTool-1.0.0-ubuntu
+# Release assets:
+#   FS25 Engine and Transmission Config Tool-1.0.0-windows-portable.zip  (only zip)
+#   FS25 Engine and Transmission Config Tool-1.0.0-windows-setup.exe
+#   FS25 Engine and Transmission Config Tool-1.0.0-mac-apple-silicon
+#   FS25 Engine and Transmission Config Tool-1.0.0-mac-intel
+#   FS25 Engine and Transmission Config Tool-1.0.0-ubuntu
 # =============================================================================
 name: Build and Release
 
@@ -80,28 +80,33 @@ jobs:
           pattern: fs25-config-tool-*
           path: artifacts
 
-      - name: Stage release assets (bare binaries)
+      - name: Stage release assets
         run: |
           set -euo pipefail
           VERSION="${{ steps.version.outputs.version }}"
+          APP_NAME="FS25 Engine and Transmission Config Tool"
           mkdir -p release-assets
           shopt -s nullglob
 
-          stage_one() {
-            local src="$1"
-            local dest="$2"
-            if [[ ! -f "$src" ]]; then
-              echo "::error::Missing expected file: ${src}"
-              exit 1
-            fi
-            cp -f "$src" "release-assets/${dest}"
-            chmod +x "release-assets/${dest}" || true
-            echo "Staged ${dest}"
+          find_binary() {
+            local dir="$1"
+            local pattern="$2"
+            local match=""
+            # Prefer exact / pattern matches that are regular files (not dirs/.app)
+            while IFS= read -r -d '' f; do
+              if [[ -f "$f" ]]; then
+                match="$f"
+                break
+              fi
+            done < <(find "$dir" -maxdepth 1 -type f -name "$pattern" -print0 2>/dev/null)
+            printf '%s' "$match"
           }
 
           for dir in artifacts/fs25-config-tool-*; do
             [[ -d "$dir" ]] || continue
             name="$(basename "$dir")"
+            echo "Processing artifact: ${name}"
+            ls -la "$dir" || true
 
             if [[ "$name" =~ ^fs25-config-tool-windows-(.+)-portable$ ]]; then
               art_version="${BASH_REMATCH[1]}"
@@ -109,8 +114,18 @@ jobs:
                 echo "::error::Artifact version ${art_version} != ${VERSION}"
                 exit 1
               }
-              files=("$dir"/*.exe)
-              stage_one "${files[0]}" "FS25ConfigTool-${VERSION}-windows-portable.exe"
+              src="$(find_binary "$dir" "*.exe")"
+              if [[ -z "$src" ]]; then
+                echo "::error::No portable .exe in ${dir}"
+                exit 1
+              fi
+              # Only Windows portable ships as a zip
+              zip_name="${APP_NAME}-${VERSION}-windows-portable.zip"
+              (
+                cd "$dir"
+                zip -9 -j "$GITHUB_WORKSPACE/release-assets/${zip_name}" "$(basename "$src")"
+              )
+              echo "Staged ${zip_name}"
 
             elif [[ "$name" =~ ^fs25-config-tool-windows-(.+)-installer$ ]]; then
               art_version="${BASH_REMATCH[1]}"
@@ -118,11 +133,17 @@ jobs:
                 echo "::error::Artifact version ${art_version} != ${VERSION}"
                 exit 1
               }
-              files=("$dir"/*-Setup.exe)
-              if [[ ! -f "${files[0]}" ]]; then
-                files=("$dir"/*.exe)
+              src="$(find_binary "$dir" "*-Setup.exe")"
+              if [[ -z "$src" ]]; then
+                src="$(find_binary "$dir" "*.exe")"
               fi
-              stage_one "${files[0]}" "FS25ConfigTool-${VERSION}-windows-setup.exe"
+              if [[ -z "$src" ]]; then
+                echo "::error::No Setup .exe in ${dir}"
+                exit 1
+              fi
+              dest="${APP_NAME}-${VERSION}-windows-setup.exe"
+              cp -f "$src" "release-assets/${dest}"
+              echo "Staged ${dest}"
 
             elif [[ "$name" =~ ^fs25-config-tool-(mac-apple-silicon|mac-intel|ubuntu|debian|mint|fedora|arch)-(.+)$ ]]; then
               platform="${BASH_REMATCH[1]}"
@@ -131,21 +152,24 @@ jobs:
                 echo "::error::Artifact version ${art_version} != ${VERSION}"
                 exit 1
               }
-              files=("$dir"/FS25ConfigTool-*)
-              # Prefer the non-.app path if both exist
-              chosen=""
-              for f in "${files[@]}"; do
-                if [[ -f "$f" && "$f" != *.app ]]; then
-                  chosen="$f"
-                  break
-                fi
-              done
-              if [[ -z "$chosen" ]]; then
+              src="$(find_binary "$dir" "${APP_NAME}")"
+              if [[ -z "$src" ]]; then
+                # Fallback: any non-.exe regular file in the folder
+                while IFS= read -r -d '' f; do
+                  if [[ -f "$f" && "$f" != *.exe && "$f" != *.app ]]; then
+                    src="$f"
+                    break
+                  fi
+                done < <(find "$dir" -maxdepth 1 -type f -print0 2>/dev/null)
+              fi
+              if [[ -z "$src" ]]; then
                 echo "::error::No binary found in ${dir}"
-                ls -la "$dir" || true
                 exit 1
               fi
-              stage_one "$chosen" "FS25ConfigTool-${VERSION}-${platform}"
+              dest="${APP_NAME}-${VERSION}-${platform}"
+              cp -f "$src" "release-assets/${dest}"
+              chmod +x "release-assets/${dest}"
+              echo "Staged ${dest}"
 
             else
               echo "::error::Unexpected artifact name: ${name}"
@@ -179,7 +203,7 @@ jobs:
           fi
 
           gh release create "$TAG" \
-            --title "FS25 Config Tool ${VERSION}" \
+            --title "FS25 Engine and Transmission Config Tool ${VERSION}" \
             --generate-notes \
             "${EXTRA_FLAGS[@]}" \
             release-assets/*

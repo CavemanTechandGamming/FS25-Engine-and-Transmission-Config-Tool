@@ -5,15 +5,16 @@ REM build_app.bat - Windows portable (onefile) + real Inno Setup installer
 REM Version comes from src\__init__.py (single source of truth).
 REM
 REM Outputs (example):
-REM   dist\windows\1.0.0\portable\FS25ConfigTool-1.0.0.exe
-REM   dist\windows\1.0.0\installer\FS25ConfigTool-1.0.0-Setup.exe
+REM   dist\windows\1.0.0\portable\FS25 Engine and Transmission Config Tool.exe
+REM   dist\windows\1.0.0\installer\FS25 Engine and Transmission Config Tool-1.0.0-Setup.exe
 REM ----------------------------------------------------------------------------
 
 cd /d "%~dp0.."
 set "PLATFORM=windows"
+set "APP_NAME=FS25 Engine and Transmission Config Tool"
 
 echo.
-echo === FS25 Config Tool - Windows build ===
+echo === %APP_NAME% - Windows build ===
 echo Working directory: %CD%
 echo.
 
@@ -38,11 +39,10 @@ if not defined VERSION (
     exit /b 1
 )
 
-set "APP_NAME=FS25ConfigTool-%VERSION%"
 set "PORTABLE_DIR=dist\%PLATFORM%\%VERSION%\portable"
 set "INSTALLER_DIR=dist\%PLATFORM%\%VERSION%\installer"
 set "PORTABLE_EXE=%PORTABLE_DIR%\%APP_NAME%.exe"
-set "SETUP_NAME=FS25ConfigTool-%VERSION%-Setup"
+set "SETUP_NAME=%APP_NAME%-%VERSION%-Setup"
 
 echo App version: %VERSION%
 echo.
@@ -89,7 +89,6 @@ echo Using ISCC: %ISCC%
 if exist "%INSTALLER_DIR%" rmdir /s /q "%INSTALLER_DIR%"
 mkdir "%INSTALLER_DIR%" 2>nul
 
-REM Resolve absolute paths for Inno defines
 for %%I in ("%PORTABLE_EXE%") do set "SOURCE_EXE=%%~fI"
 for %%I in ("%INSTALLER_DIR%") do set "OUT_DIR=%%~fI"
 
