@@ -20,6 +20,33 @@ def _geometric(first: float, last: float, count: int) -> List[float]:
     return [round(first * (step ** i), 3) for i in range(count)]
 
 
+def _int_geometric_speeds(first: float, last: float, count: int) -> List[int]:
+    """PowerShift ``maxSpeed`` values — whole km/h only (Giants convention)."""
+    if count <= 0:
+        return []
+    last_i = int(round(last))
+    first_i = max(2, int(round(first)))
+    if count == 1:
+        return [last_i]
+    raw = _geometric(float(first_i), float(last_i), count)
+    speeds: List[int] = []
+    for i, value in enumerate(raw):
+        if i == 0:
+            speeds.append(first_i)
+        elif i == count - 1:
+            speeds.append(last_i)
+        else:
+            speeds.append(int(round(value)))
+    for i in range(1, len(speeds)):
+        if speeds[i] <= speeds[i - 1]:
+            speeds[i] = speeds[i - 1] + 1
+    speeds[-1] = last_i
+    if len(speeds) > 1 and speeds[-2] >= last_i:
+        step = max(1, (last_i - first_i) // (count - 1))
+        speeds = [first_i + step * i for i in range(count - 1)] + [last_i]
+    return speeds
+
+
 def _clamp(value: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, value))
 
@@ -252,14 +279,14 @@ class GearRatioCalculator:
         num_reverse: int,
         top_speed: float,
     ) -> Dict:
-        first = round(max(2.2, top_speed * 0.05), 1)
-        last = round(top_speed, 1)
-        forward_speeds = _geometric(first, last, num_forward)
+        last = int(round(top_speed))
+        first = max(2, int(round(max(2.2, top_speed * 0.05))))
+        forward_speeds = _int_geometric_speeds(first, last, num_forward)
         if num_reverse <= 0:
-            reverse_speeds: List[float] = []
+            reverse_speeds: List[int] = []
         else:
-            r_last = round(min(top_speed * 0.35, last * 0.4), 1)
-            reverse_speeds = _geometric(first, max(first, r_last), num_reverse)
+            r_last = max(first, int(round(min(top_speed * 0.35, last * 0.4))))
+            reverse_speeds = _int_geometric_speeds(first, r_last, num_reverse)
         return {
             "family": "discrete_maxSpeed",
             "l10n_name": L10N["PowerShift"],

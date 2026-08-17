@@ -37,6 +37,20 @@ import sys
 
 logger = logging.getLogger("fs25config.app")
 
+DRIVE_LAYOUT_LABELS: Dict[str, str] = {
+    "Four-wheel drive (4WD)": "4wd",
+    "Front-wheel drive (FWD)": "fwd",
+    "Rear-wheel drive (RWD)": "rwd",
+    "Six-wheel drive (6×6)": "6x6",
+}
+DRIVE_LAYOUT_CHOICES = list(DRIVE_LAYOUT_LABELS.keys())
+
+DRIVE_LAYOUT_TOOLTIP = (
+    "Which wheels receive engine torque.\n"
+    "Wheel indices must match your mod vehicle's wheel list.\n"
+    "FWD/RWD: one axle pair. 4WD: two pairs + center merge. 6×6: three axles."
+)
+
 AXLE_RATIO_TOOLTIP = (
     "Giants axleRatio — vanilla ranges:\n"
     "cars/pickups ~15–25\n"
@@ -187,7 +201,8 @@ class FS25ConfigTool:
         self._transmission_axle_use_ctk = False
         self.engine_preset_dropdown = None
         self.transmission_preset_dropdown = None
-        
+        self.drive_layout_label = tk.StringVar(value="Four-wheel drive (4WD)")
+
         self.setup_gui()
         self.apply_startup_default_presets()
         self.root.after(50, self.center_main_window)
@@ -326,7 +341,8 @@ class FS25ConfigTool:
         left_col.grid(row=1, column=0, sticky="nsew", padx=(6, 4), pady=(0, 6))
         left_col.grid_columnconfigure(0, weight=1)
         left_col.grid_rowconfigure(0, weight=1)
-        left_col.grid_rowconfigure(1, weight=1)
+        left_col.grid_rowconfigure(1, weight=0)
+        left_col.grid_rowconfigure(2, weight=1)
 
         engine_panel = ctk.CTkFrame(left_col)
         engine_panel.grid(row=0, column=0, sticky="nsew", padx=4, pady=(4, 4))
@@ -340,8 +356,12 @@ class FS25ConfigTool:
         engine_body.pack(fill=tk.BOTH, expand=True, padx=4, pady=(0, 4))
         self.setup_engine_tab(engine_body)
 
+        drive_panel = ctk.CTkFrame(left_col)
+        drive_panel.grid(row=1, column=0, sticky="ew", padx=4, pady=(0, 4))
+        self.setup_drive_layout_panel(drive_panel)
+
         transmission_panel = ctk.CTkFrame(left_col)
-        transmission_panel.grid(row=1, column=0, sticky="nsew", padx=4, pady=(4, 4))
+        transmission_panel.grid(row=2, column=0, sticky="nsew", padx=4, pady=(4, 4))
         transmission_label = ctk.CTkLabel(
             transmission_panel,
             text="Transmission",
@@ -401,7 +421,8 @@ class FS25ConfigTool:
         left_col.grid(row=1, column=0, sticky="nsew", padx=(0, 4))
         left_col.grid_columnconfigure(0, weight=1)
         left_col.grid_rowconfigure(0, weight=1)
-        left_col.grid_rowconfigure(1, weight=1)
+        left_col.grid_rowconfigure(1, weight=0)
+        left_col.grid_rowconfigure(2, weight=1)
 
         engine_panel = tk.LabelFrame(
             left_col,
@@ -413,6 +434,16 @@ class FS25ConfigTool:
         engine_panel.grid(row=0, column=0, sticky="nsew", pady=(0, 4))
         self.setup_engine_tab(engine_panel)
 
+        drive_panel = tk.LabelFrame(
+            left_col,
+            text="Drive layout",
+            bg=self.colors['bg'],
+            fg=self.colors['fg'],
+            font=("Arial", 10, "bold"),
+        )
+        drive_panel.grid(row=1, column=0, sticky="ew", pady=(0, 4))
+        self.setup_drive_layout_panel(drive_panel)
+
         transmission_panel = tk.LabelFrame(
             left_col,
             text="Transmission",
@@ -420,7 +451,7 @@ class FS25ConfigTool:
             fg=self.colors['fg'],
             font=("Arial", 10, "bold"),
         )
-        transmission_panel.grid(row=1, column=0, sticky="nsew", pady=(4, 0))
+        transmission_panel.grid(row=2, column=0, sticky="nsew", pady=(4, 0))
         self.setup_transmission_tab(transmission_panel)
 
         output_panel = tk.Frame(main_frame, bg=self.colors['bg'])
@@ -580,6 +611,51 @@ class FS25ConfigTool:
         turbo_check.pack(side=tk.LEFT, padx=(12, 0))
         Tooltip(turbo_check, "Check if the engine is turbocharged. Affects torque curve generation")
     
+    def setup_drive_layout_panel(self, parent):
+        """Drive layout selector between engine and transmission panels."""
+        if CUSTOM_TKINTER_AVAILABLE:
+            self.setup_custom_drive_layout_panel(parent)
+        else:
+            self.setup_standard_drive_layout_panel(parent)
+
+    def setup_custom_drive_layout_panel(self, parent):
+        """Compact drive-layout dropdown (CustomTkinter)."""
+        row = ctk.CTkFrame(parent, fg_color="transparent")
+        row.pack(fill=tk.X, padx=12, pady=10)
+        title = ctk.CTkLabel(
+            row,
+            text="Drive layout",
+            font=ctk.CTkFont(size=14, weight="bold"),
+        )
+        title.pack(side=tk.LEFT, padx=(0, 12))
+        layout_combo = ctk.CTkOptionMenu(
+            row,
+            values=DRIVE_LAYOUT_CHOICES,
+            variable=self.drive_layout_label,
+            width=260,
+        )
+        layout_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        Tooltip(layout_combo, DRIVE_LAYOUT_TOOLTIP)
+        Tooltip(title, DRIVE_LAYOUT_TOOLTIP)
+
+    def setup_standard_drive_layout_panel(self, parent):
+        """Compact drive-layout dropdown (standard Tkinter)."""
+        row = tk.Frame(parent, bg=self.colors['bg'])
+        row.pack(fill=tk.X, padx=8, pady=6)
+        layout_combo = ttk.Combobox(
+            row,
+            textvariable=self.drive_layout_label,
+            values=DRIVE_LAYOUT_CHOICES,
+            state="readonly",
+            width=34,
+        )
+        layout_combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        Tooltip(layout_combo, DRIVE_LAYOUT_TOOLTIP)
+
+    def get_drive_layout(self) -> str:
+        """Return the generator key for the selected drive layout."""
+        return DRIVE_LAYOUT_LABELS.get(self.drive_layout_label.get(), "4wd")
+
     def setup_transmission_tab(self, parent):
         """Set up the transmission configuration tab."""
         if CUSTOM_TKINTER_AVAILABLE:
@@ -1649,7 +1725,8 @@ class FS25ConfigTool:
         """Generate and display engine XML."""
         try:
             engine_data = self.get_engine_data()
-            xml = XMLGenerator.generate_engine_xml(engine_data)
+            drive_layout = self.get_drive_layout()
+            xml = XMLGenerator.generate_engine_xml(engine_data, drive_layout)
             self.highlight_xml_syntax(xml)
         except ValueError as e:
             show_error("Validation Error", f"Invalid input data: {str(e)}")
@@ -1674,7 +1751,10 @@ class FS25ConfigTool:
             transmission_data = self.get_transmission_data()
             
             # Generate combined XML in FS25 format
-            combined_xml = XMLGenerator.generate_combined_fs25_xml(engine_data, transmission_data)
+            drive_layout = self.get_drive_layout()
+            combined_xml = XMLGenerator.generate_combined_fs25_xml(
+                engine_data, transmission_data, drive_layout
+            )
             
             self.highlight_xml_syntax(combined_xml)
         except ValueError as e:
@@ -1687,7 +1767,10 @@ class FS25ConfigTool:
         try:
             engine_data = self.get_engine_data()
             transmission_data = self.get_transmission_data()
-            xml = XMLGenerator.generate_combined_fs25_xml(engine_data, transmission_data)
+            drive_layout = self.get_drive_layout()
+            xml = XMLGenerator.generate_combined_fs25_xml(
+                engine_data, transmission_data, drive_layout
+            )
             self.highlight_xml_syntax(xml)
             try:
                 self.root.clipboard_clear()
@@ -1720,7 +1803,10 @@ class FS25ConfigTool:
             transmission_data = self.get_transmission_data()
             
             # Generate combined FS25 XML
-            combined_xml = XMLGenerator.generate_combined_fs25_xml(engine_data, transmission_data)
+            drive_layout = self.get_drive_layout()
+            combined_xml = XMLGenerator.generate_combined_fs25_xml(
+                engine_data, transmission_data, drive_layout
+            )
             
             # Save combined XML
             combined_filename = f"{base_name}_fs25.xml"
@@ -1728,7 +1814,7 @@ class FS25ConfigTool:
                 f.write(combined_xml)
             
             # Also save separate files for reference
-            engine_xml = XMLGenerator.generate_engine_xml(engine_data)
+            engine_xml = XMLGenerator.generate_engine_xml(engine_data, drive_layout)
             transmission_xml = XMLGenerator.generate_transmission_xml(transmission_data)
             
             engine_filename = f"{base_name}_engine.xml"
@@ -1749,7 +1835,8 @@ class FS25ConfigTool:
         """Copy engine XML to clipboard."""
         try:
             engine_data = self.get_engine_data()
-            xml = XMLGenerator.generate_engine_xml(engine_data)
+            drive_layout = self.get_drive_layout()
+            xml = XMLGenerator.generate_engine_xml(engine_data, drive_layout)
             try:
                 self.root.clipboard_clear()
                 self.root.clipboard_append(xml)
@@ -1799,7 +1886,8 @@ class FS25ConfigTool:
                 
                 # Generate XML
                 try:
-                    xml = XMLGenerator.generate_engine_xml(engine_data)
+                    drive_layout = self.get_drive_layout()
+                    xml = XMLGenerator.generate_engine_xml(engine_data, drive_layout)
                 except Exception as e:
                     show_error("XML Generation Error", f"Failed to generate XML: {str(e)}")
                     return

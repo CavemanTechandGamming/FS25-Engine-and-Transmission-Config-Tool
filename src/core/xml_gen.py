@@ -38,25 +38,89 @@ class XMLGenerator:
         indent_level = 0
         parts = re.split(r"(<[^>]+>)", xml_string)
 
-        for part in parts:
-            part = part.strip()
+        i = 0
+        while i < len(parts):
+            part = parts[i].strip()
             if not part:
+                i += 1
                 continue
 
+            inline_suffix = ""
+            j = i + 1
+            while j < len(parts) and not parts[j].strip():
+                j += 1
+            if j < len(parts):
+                next_part = parts[j].strip()
+                if next_part.startswith("<!--"):
+                    inline_suffix = " " + next_part
+                    i = j + 1
+                else:
+                    i += 1
+            else:
+                i += 1
+
             if part.startswith("<?xml"):
-                lines.append(part)
+                lines.append(part + inline_suffix)
             elif part.startswith("<!--"):
                 lines.append(" " * indent_level + part)
             elif part.startswith("</"):
                 indent_level = max(0, indent_level - 1)
-                lines.append(" " * indent_level + part)
+                lines.append(" " * indent_level + part + inline_suffix)
             elif part.startswith("<") and not part.endswith("/>"):
-                lines.append(" " * indent_level + part)
+                lines.append(" " * indent_level + part + inline_suffix)
                 indent_level += 1
             else:
-                lines.append(" " * indent_level + part)
+                lines.append(" " * indent_level + part + inline_suffix)
 
         return "\n".join(lines)
+
+    @staticmethod
+    def _indent_lines(text: str, levels: int = 1) -> str:
+        pad = " " * levels
+        out = []
+        for line in text.splitlines():
+            out.append(pad + line if line.strip() else line)
+        return "\n".join(out)
+
+    @staticmethod
+    def _assemble_document(*blocks: str) -> str:
+        """Join pre-formatted XML blocks with a blank line between each."""
+        return (
+            '<?xml version="1.0" encoding="utf-8" standalone="no" ?>\n\n'
+            + "\n\n".join(block for block in blocks if block)
+        )
+
+    @staticmethod
+    def _motor_configurations_xml(
+        *,
+        name: str,
+        hp: float,
+        price: float,
+        motor_open: str,
+        torque_xml: str,
+        transmission_spec: Dict | None = None,
+    ) -> str:
+        motor_body = XMLGenerator.format_xml(motor_open + torque_xml + "</motor>")
+        if transmission_spec is not None:
+            trans_body = XMLGenerator.format_xml(
+                XMLGenerator._transmission_xml(transmission_spec)
+            )
+            config_content = (
+                XMLGenerator._indent_lines(motor_body, 2)
+                + "\n\n"
+                + XMLGenerator._indent_lines(trans_body, 2)
+            )
+        else:
+            config_content = XMLGenerator._indent_lines(motor_body, 2)
+
+        return (
+            "<motorConfigurations>\n"
+            f' <motorConfiguration name="{_esc(name)}" hp="{_fmt_num(hp)}" '
+            f'price="{_fmt_num(price)}" consumerConfigurationIndex="1">\n'
+            f"{config_content}\n"
+            " </motorConfiguration>\n"
+            "</motorConfigurations>"
+        )
 
     @staticmethod
     def _torque_points(engine_data: Dict) -> List[Tuple[float, float]]:
@@ -182,29 +246,119 @@ class XMLGenerator:
             "</consumerConfigurations>"
         )
 
+    _DRIVE_LAYOUTS: Dict[str, Tuple[str, List[Tuple[str, str]]]] = {
+        "fwd": (
+            "front-wheel drive (FWD)",
+            [
+                (
+                    '<differential torqueRatio="0.5" maxSpeedRatio="1.5" '
+                    'wheelIndex1="1" wheelIndex2="2"/>',
+                    "front left-right",
+                ),
+            ],
+        ),
+        "rwd": (
+            "rear-wheel drive (RWD)",
+            [
+                (
+                    '<differential torqueRatio="0.5" maxSpeedRatio="1.5" '
+                    'wheelIndex1="3" wheelIndex2="4"/>',
+                    "rear left-right",
+                ),
+            ],
+        ),
+        "4wd": (
+            "four-wheel drive (4WD)",
+            [
+                (
+                    '<differential torqueRatio="0.5" maxSpeedRatio="1.5" '
+                    'wheelIndex1="1" wheelIndex2="2"/>',
+                    "front left-right",
+                ),
+                (
+                    '<differential torqueRatio="0.5" maxSpeedRatio="1.5" '
+                    'wheelIndex1="3" wheelIndex2="4"/>',
+                    "rear left-right",
+                ),
+                (
+                    '<differential torqueRatio="0.5" maxSpeedRatio="1.5" '
+                    'differentialIndex1="1" differentialIndex2="2"/>',
+                    "front-back center",
+                ),
+            ],
+        ),
+        "6x6": (
+            "six-wheel drive (6x6 / three axles)",
+            [
+                (
+                    '<differential torqueRatio="0.5" maxSpeedRatio="1.5" '
+                    'wheelIndex1="1" wheelIndex2="2"/>',
+                    "axle 1 left-right",
+                ),
+                (
+                    '<differential torqueRatio="0.5" maxSpeedRatio="1.5" '
+                    'wheelIndex1="3" wheelIndex2="4"/>',
+                    "axle 2 left-right",
+                ),
+                (
+                    '<differential torqueRatio="0.5" maxSpeedRatio="1.5" '
+                    'wheelIndex1="5" wheelIndex2="6"/>',
+                    "axle 3 left-right",
+                ),
+                (
+                    '<differential torqueRatio="0.5" maxSpeedRatio="1.5" '
+                    'differentialIndex1="1" differentialIndex2="2"/>',
+                    "axles 1-2 merge",
+                ),
+                (
+                    '<differential torqueRatio="0.5" maxSpeedRatio="1.3" '
+                    'differentialIndex1="3" differentialIndex2="4"/>',
+                    "axles 1-2 to axle 3",
+                ),
+            ],
+        ),
+    }
+
     @staticmethod
-    def generate_engine_xml(engine_data: Dict) -> str:
+    def _differential_xml(drive_layout: str = "4wd") -> str:
+        """Open diff stack for the requested drive layout (paste at ``<motorized>`` level)."""
+        layout_key = drive_layout.lower()
+        if layout_key not in XMLGenerator._DRIVE_LAYOUTS:
+            layout_key = "4wd"
+        label, diffs = XMLGenerator._DRIVE_LAYOUTS[layout_key]
+        diff_lines = "".join(f"{xml} <!-- {comment} -->" for xml, comment in diffs)
+        return (
+            "<differentialConfigurations>"
+            f'<differentialConfiguration> <!-- {label} -->'
+            "<differentials>"
+            f"{diff_lines}"
+            "</differentials>"
+            "</differentialConfiguration>"
+            "</differentialConfigurations>"
+        )
+
+    @staticmethod
+    def generate_engine_xml(engine_data: Dict, drive_layout: str = "4wd") -> str:
         points = XMLGenerator._torque_points(engine_data)
         torque_scale = TorqueCurveGenerator.torque_scale_from_hp(
             engine_data["horsepower"], engine_data["max_rpm"]
         )
-        xml = (
-            '<?xml version="1.0" encoding="utf-8" standalone="no" ?>'
-            "<motorConfigurations>"
-            f'<motorConfiguration name="{_esc(engine_data["name"])}" '
-            f'hp="{_fmt_num(engine_data["horsepower"])}" '
-            f'price="{_fmt_num(engine_data["cost"])}" consumerConfigurationIndex="1">'
-            + XMLGenerator._motor_open(
-                engine_data,
-                max_forward=120,
-                max_backward=22,
-                torque_scale=torque_scale,
-            )
-            + XMLGenerator._torque_xml(points)
-            + "</motor></motorConfiguration></motorConfigurations>"
-            + XMLGenerator._consumer_xml(engine_data)
+        return XMLGenerator._assemble_document(
+            XMLGenerator.format_xml(XMLGenerator._consumer_xml(engine_data)),
+            XMLGenerator.format_xml(XMLGenerator._differential_xml(drive_layout)),
+            XMLGenerator._motor_configurations_xml(
+                name=engine_data["name"],
+                hp=engine_data["horsepower"],
+                price=engine_data["cost"],
+                motor_open=XMLGenerator._motor_open(
+                    engine_data,
+                    max_forward=120,
+                    max_backward=22,
+                    torque_scale=torque_scale,
+                ),
+                torque_xml=XMLGenerator._torque_xml(points),
+            ),
         )
-        return XMLGenerator.format_xml(xml)
 
     @staticmethod
     def _custom_axle(transmission_data: Dict):
@@ -224,24 +378,31 @@ class XMLGenerator:
             XMLGenerator._custom_axle(transmission_data),
         )
         top = transmission_data["top_speed"]
-        xml = (
-            '<?xml version="1.0" encoding="utf-8" standalone="no" ?>'
-            "<motorConfigurations>"
-            f'<motorConfiguration name="{_esc(transmission_data["name"])}" '
-            f'hp="0" price="{_fmt_num(transmission_data["cost"])}">'
+        motor_open = (
             f'<motor torqueScale="1.0" minRpm="1000" maxRpm="6000" '
             f'maxForwardSpeed="{_fmt_num(top)}" maxBackwardSpeed="22" '
             f'brakeForce="2" lowBrakeForceScale="0.1" dampingRateScale="0.2">'
-            '<torque rpm="1000" torque="1.0"/>'
-            '<torque rpm="6000" torque="1.0"/>'
-            "</motor>"
-            + XMLGenerator._transmission_xml(spec)
-            + "</motorConfiguration></motorConfigurations>"
         )
-        return XMLGenerator.format_xml(xml)
+        return XMLGenerator._assemble_document(
+            XMLGenerator._motor_configurations_xml(
+                name=transmission_data["name"],
+                hp=0,
+                price=transmission_data["cost"],
+                motor_open=motor_open,
+                torque_xml=(
+                    '<torque rpm="1000" torque="1.0"/>'
+                    '<torque rpm="6000" torque="1.0"/>'
+                ),
+                transmission_spec=spec,
+            ),
+        )
 
     @staticmethod
-    def generate_combined_fs25_xml(engine_data: Dict, transmission_data: Dict) -> str:
+    def generate_combined_fs25_xml(
+        engine_data: Dict,
+        transmission_data: Dict,
+        drive_layout: str = "4wd",
+    ) -> str:
         points = XMLGenerator._torque_points(engine_data)
         spec = GearRatioCalculator.build_transmission(
             transmission_data["type"],
@@ -255,26 +416,28 @@ class XMLGenerator:
         torque_scale = TorqueCurveGenerator.torque_scale_from_hp(
             engine_data["horsepower"], engine_data["max_rpm"]
         )
-        top = transmission_data["top_speed"]
-        max_back = 22 if spec["family"] != "discrete_maxSpeed" else round(min(32.0, top * 0.4), 1)
+        top = int(round(transmission_data["top_speed"]))
+        max_back = (
+            22
+            if spec["family"] != "discrete_maxSpeed"
+            else int(round(min(32.0, top * 0.4)))
+        )
         config_name = f'{engine_data["name"]} - {transmission_data["name"]}'
         price = engine_data["cost"] + transmission_data["cost"]
-        xml = (
-            '<?xml version="1.0" encoding="utf-8" standalone="no" ?>'
-            "<motorConfigurations>"
-            f'<motorConfiguration name="{_esc(config_name)}" '
-            f'hp="{_fmt_num(engine_data["horsepower"])}" '
-            f'price="{_fmt_num(price)}" consumerConfigurationIndex="1">'
-            + XMLGenerator._motor_open(
-                engine_data,
-                max_forward=top,
-                max_backward=max_back,
-                torque_scale=torque_scale,
-            )
-            + XMLGenerator._torque_xml(points)
-            + "</motor>"
-            + XMLGenerator._transmission_xml(spec)
-            + "</motorConfiguration></motorConfigurations>"
-            + XMLGenerator._consumer_xml(engine_data)
+        return XMLGenerator._assemble_document(
+            XMLGenerator.format_xml(XMLGenerator._consumer_xml(engine_data)),
+            XMLGenerator.format_xml(XMLGenerator._differential_xml(drive_layout)),
+            XMLGenerator._motor_configurations_xml(
+                name=config_name,
+                hp=engine_data["horsepower"],
+                price=price,
+                motor_open=XMLGenerator._motor_open(
+                    engine_data,
+                    max_forward=top,
+                    max_backward=max_back,
+                    torque_scale=torque_scale,
+                ),
+                torque_xml=XMLGenerator._torque_xml(points),
+                transmission_spec=spec,
+            ),
         )
-        return XMLGenerator.format_xml(xml)

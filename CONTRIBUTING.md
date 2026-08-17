@@ -36,7 +36,16 @@ Everything else reads from that value:
 - `python scripts/read_version.py` (used by CI)
 - GitHub Release tags / asset names (`vX.Y.Z`, `FS25ConfigTool-X.Y.Z-…`)
 
-**When shipping a new release:** bump `__version__` in `src/__init__.py`, update [CHANGELOG.md](CHANGELOG.md), commit, then run **Build and Release**. Do not hard-code the version in workflows or scripts.
+**During development:** keep `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md) current as you land user-visible work — same [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) categories (`Added`, `Changed`, `Fixed`, etc.), complete sentences, no secrets. Commit CHANGELOG updates with the feature or fix they describe; do not batch everything only at release time.
+
+**When shipping a new release:**
+
+1. Bump `__version__` in `src/__init__.py`
+2. Move items from `## [Unreleased]` into a dated version section in [CHANGELOG.md](CHANGELOG.md)
+3. Commit and push
+4. Run **Build and Release**
+
+Do not hard-code the version in workflows or scripts.
 
 ## About `.gitignore`
 
@@ -159,7 +168,7 @@ gh run download
 
 ### Build and release
 
-1. Bump `__version__` in `src/__init__.py`, update `CHANGELOG.md`, and push to `main`
+1. Bump `__version__` in `src/__init__.py`, move `CHANGELOG.md` items out of `[Unreleased]`, and push to `main`
 2. Actions → **Build and Release** → **Run workflow**
 3. Creates tag `vX.Y.Z` and attaches:
 
