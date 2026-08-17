@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Transmission form: optional **Custom axle ratio** with Giants `axleRatio` entry and hover tooltip (vanilla ranges by vehicle class). Unchecked = generator default; hidden for CVT.
+
+### Changed
+
+- XML generation follows vanilla FS25 families: Automatic/highway Manual use `gearRatio` plus a Giants `axleRatio` (not a US 4.10 stamp); CVT uses min/max ratio with no gears; PowerShift uses `maxSpeed` gears and axle ~0.95.
+- `torqueScale` is derived from horsepower. Fuel Scale writes `<consumer usage>` instead of being stuffed into `torqueScale`.
+- Automatic gear spreads overdrive (about 0.61 in 10th) instead of a linear 4.5→1.3.
+
 ## [1.1.0] - 2026-07-16
 
 ### Added

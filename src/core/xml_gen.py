@@ -1,231 +1,280 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from src.core.torque import TorqueCurveGenerator
 from src.core.gears import GearRatioCalculator
 
+
+def _esc(value) -> str:
+    return (
+        str(value)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def _fmt_num(value: float) -> str:
+    if float(value).is_integer():
+        return str(int(value))
+    text = f"{value:.3f}".rstrip("0").rstrip(".")
+    return text
+
+
 class XMLGenerator:
     """
-    Handles generation of XML configuration files for FS25.
-    Creates properly formatted XML for engines and transmissions.
+    Generate FS25 motorConfiguration XML. UI is unchanged; only the
+    emitted families/fields differ (CVT / PowerShift / highway auto).
     """
-    
+
     @staticmethod
     def format_xml(xml_string: str) -> str:
-        """
-        Format XML string with proper indentation for better readability.
-        
-        Args:
-            xml_string: Raw XML string
-            
-        Returns:
-            Formatted XML string with proper indentation
-        """
         import re
-        
-        # Remove existing whitespace and newlines
-        xml_string = re.sub(r'\s+', ' ', xml_string.strip())
-        
-        # Split into lines and format
+
+        xml_string = re.sub(r"\s+", " ", xml_string.strip())
         lines = []
         indent_level = 0
-        
-        # Split by tags
-        parts = re.split(r'(<[^>]+>)', xml_string)
-        
+        parts = re.split(r"(<[^>]+>)", xml_string)
+
         for part in parts:
             part = part.strip()
             if not part:
                 continue
-                
-            if part.startswith('<?xml'):
-                # XML declaration
+
+            if part.startswith("<?xml"):
                 lines.append(part)
-            elif part.startswith('<!--'):
-                # Comments
-                lines.append(' ' * indent_level + part)
-            elif part.startswith('</'):
-                # Closing tag
+            elif part.startswith("<!--"):
+                lines.append(" " * indent_level + part)
+            elif part.startswith("</"):
                 indent_level = max(0, indent_level - 1)
-                lines.append(' ' * indent_level + part)
-            elif part.startswith('<') and not part.endswith('/>'):
-                # Opening tag
-                lines.append(' ' * indent_level + part)
+                lines.append(" " * indent_level + part)
+            elif part.startswith("<") and not part.endswith("/>"):
+                lines.append(" " * indent_level + part)
                 indent_level += 1
             else:
-                # Self-closing tag or text content
-                lines.append(' ' * indent_level + part)
-        
-        return '\n'.join(lines)
-    
+                lines.append(" " * indent_level + part)
+
+        return "\n".join(lines)
+
+    @staticmethod
+    def _torque_points(engine_data: Dict) -> List[Tuple[float, float]]:
+        torque_curve = TorqueCurveGenerator.generate_torque_curve(
+            engine_data["horsepower"],
+            engine_data["min_rpm"],
+            engine_data["max_rpm"],
+            engine_data["turbocharged"],
+        )
+        peak = max(torque for _, torque in torque_curve)
+        points = []
+        for norm_rpm, torque in torque_curve:
+            actual_rpm = norm_rpm * engine_data["max_rpm"]
+            points.append((actual_rpm, torque / peak))
+        return points
+
+    @staticmethod
+    def _motor_open(
+        engine_data: Dict,
+        *,
+        max_forward: float,
+        max_backward: float,
+        torque_scale: float,
+    ) -> str:
+        return (
+            f'<motor torqueScale="{_fmt_num(torque_scale)}" '
+            f'minRpm="{_fmt_num(engine_data["min_rpm"])}" '
+            f'maxRpm="{_fmt_num(engine_data["max_rpm"])}" '
+            f'maxForwardSpeed="{_fmt_num(max_forward)}" '
+            f'maxBackwardSpeed="{_fmt_num(max_backward)}" '
+            f'brakeForce="2" lowBrakeForceScale="0.1" dampingRateScale="0.2">'
+        )
+
+    @staticmethod
+    def _torque_xml(points: List[Tuple[float, float]]) -> str:
+        lines = []
+        for rpm, torque in points:
+            lines.append(
+                f'<torque rpm="{rpm:.0f}" torque="{torque:.2f}"/>'
+            )
+        return "".join(lines)
+
+    @staticmethod
+    def _transmission_xml(spec: Dict) -> str:
+        name = spec["l10n_name"]
+        family = spec["family"]
+        if family == "continuous_minMaxRatio":
+            return (
+                f'<transmission minForwardGearRatio="{_fmt_num(spec["min_forward_gear_ratio"])}" '
+                f'maxForwardGearRatio="{_fmt_num(spec["max_forward_gear_ratio"])}" '
+                f'minBackwardGearRatio="{_fmt_num(spec["min_backward_gear_ratio"])}" '
+                f'maxBackwardGearRatio="{_fmt_num(spec["max_backward_gear_ratio"])}" '
+                f'name="{_esc(name)}"/>'
+            )
+
+        attrs = [f'name="{_esc(name)}"']
+        if spec.get("auto_gear_change_time") is not None:
+            attrs.append(
+                f'autoGearChangeTime="{_fmt_num(spec["auto_gear_change_time"])}"'
+            )
+        if spec.get("gear_change_time") is not None:
+            attrs.append(
+                f'gearChangeTime="{_fmt_num(spec["gear_change_time"])}"'
+            )
+        if spec.get("axle_ratio") is not None:
+            attrs.append(f'axleRatio="{_fmt_num(spec["axle_ratio"])}"')
+        if spec.get("start_gear_threshold") is not None:
+            attrs.append(
+                f'startGearThreshold="{_fmt_num(spec["start_gear_threshold"])}"'
+            )
+
+        if family == "discrete_maxSpeed":
+            direction = (
+                '<directionChange useGear="true" reverseGearIndex="1" '
+                'changeTime="0.5"/>'
+            )
+        else:
+            direction = '<directionChange useGear="true"/>'
+
+        gears = [direction]
+        for gear in spec.get("backward", []):
+            extra = ""
+            if gear.get("name"):
+                extra += f' name="{_esc(gear["name"])}"'
+            if "maxSpeed" in gear:
+                gears.append(
+                    f'<backwardGear maxSpeed="{_fmt_num(gear["maxSpeed"])}"{extra}/>'
+                )
+            else:
+                gears.append(
+                    f'<backwardGear gearRatio="{_fmt_num(gear["gearRatio"])}"{extra}/>'
+                )
+        for gear in spec.get("forward", []):
+            extra = ""
+            if gear.get("name"):
+                extra += f' name="{_esc(gear["name"])}"'
+            if "maxSpeed" in gear:
+                gears.append(
+                    f'<forwardGear maxSpeed="{_fmt_num(gear["maxSpeed"])}"{extra}/>'
+                )
+            else:
+                gears.append(
+                    f'<forwardGear gearRatio="{_fmt_num(gear["gearRatio"])}"/>'
+                )
+
+        return (
+            f'<transmission {" ".join(attrs)}>'
+            + "".join(gears)
+            + "</transmission>"
+        )
+
+    @staticmethod
+    def _consumer_xml(engine_data: Dict) -> str:
+        usage = TorqueCurveGenerator.consumer_usage(
+            engine_data["horsepower"],
+            engine_data["fuel_usage_scale"],
+        )
+        return (
+            "<consumerConfigurations>"
+            "<consumerConfiguration>"
+            f'<consumer fillUnitIndex="1" usage="{_fmt_num(usage)}" fillType="diesel"/>'
+            "</consumerConfiguration>"
+            "</consumerConfigurations>"
+        )
+
     @staticmethod
     def generate_engine_xml(engine_data: Dict) -> str:
-        """
-        Generate XML for engine configuration in FS25 format.
-        
-        Args:
-            engine_data: Dictionary containing engine specifications
-            
-        Returns:
-            Formatted XML string
-        """
-        torque_curve = TorqueCurveGenerator.generate_torque_curve(
-            engine_data['horsepower'],
-            engine_data['min_rpm'],
-            engine_data['max_rpm'],
-            engine_data['turbocharged']
+        points = XMLGenerator._torque_points(engine_data)
+        torque_scale = TorqueCurveGenerator.torque_scale_from_hp(
+            engine_data["horsepower"], engine_data["max_rpm"]
         )
-        
-        # Convert normalized RPM back to actual RPM for FS25 format
-        actual_rpm_torque = []
-        for norm_rpm, torque in torque_curve:
-            actual_rpm = norm_rpm * engine_data['max_rpm']
-            # Convert torque to scale (0-1 range)
-            torque_scale = torque / max(torque for _, torque in torque_curve)
-            actual_rpm_torque.append((actual_rpm, torque_scale))
-        
-        xml = f'''<?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<motorConfigurations>
-    <motorConfiguration name="{engine_data['name']}" hp="{engine_data['horsepower']}" price="{engine_data['cost']}">
-        <motor torqueScale="{engine_data['fuel_usage_scale']}" minRpm="{engine_data['min_rpm']}" maxRpm="{engine_data['max_rpm']}" maxForwardSpeed="120" maxBackwardSpeed="22" brakeForce="2" lowBrakeForceScale="0.1" dampingRateScale="0.2">
-'''
-        
-        for rpm, torque_scale in actual_rpm_torque:
-            xml += f'            <torque rpm="{rpm:.0f}" torque="{torque_scale:.2f}"/>\n'
-        
-        xml += '''        </motor>
-    </motorConfiguration>
-</motorConfigurations>'''
-        
-        # Format the XML for better readability
+        xml = (
+            '<?xml version="1.0" encoding="utf-8" standalone="no" ?>'
+            "<motorConfigurations>"
+            f'<motorConfiguration name="{_esc(engine_data["name"])}" '
+            f'hp="{_fmt_num(engine_data["horsepower"])}" '
+            f'price="{_fmt_num(engine_data["cost"])}" consumerConfigurationIndex="1">'
+            + XMLGenerator._motor_open(
+                engine_data,
+                max_forward=120,
+                max_backward=22,
+                torque_scale=torque_scale,
+            )
+            + XMLGenerator._torque_xml(points)
+            + "</motor></motorConfiguration></motorConfigurations>"
+            + XMLGenerator._consumer_xml(engine_data)
+        )
         return XMLGenerator.format_xml(xml)
-    
+
+    @staticmethod
+    def _custom_axle(transmission_data: Dict):
+        if not transmission_data.get("use_custom_axle_ratio"):
+            return None
+        return transmission_data.get("axle_ratio")
+
     @staticmethod
     def generate_transmission_xml(transmission_data: Dict) -> str:
-        """
-        Generate XML for transmission configuration in FS25 format.
-        
-        Args:
-            transmission_data: Dictionary containing transmission specifications
-            
-        Returns:
-            Formatted XML string
-        """
-        gear_ratios = GearRatioCalculator.calculate_gear_ratios(
-            transmission_data['type'],
-            transmission_data['num_forward'],
-            transmission_data['num_reverse'],
-            transmission_data['top_speed'],
-            transmission_data.get('enable_low_gearing', False),
-            transmission_data.get('low_gear_boost', 25.0)
+        spec = GearRatioCalculator.build_transmission(
+            transmission_data["type"],
+            transmission_data["num_forward"],
+            transmission_data["num_reverse"],
+            transmission_data["top_speed"],
+            transmission_data.get("enable_low_gearing", False),
+            transmission_data.get("low_gear_boost", 25.0),
+            XMLGenerator._custom_axle(transmission_data),
         )
-        
-        # Determine transmission type for FS25
-        if transmission_data['type'].lower() == 'automatic':
-            auto_gear_change_time = "1"
-            gear_change_time = "0.3"
-        else:
-            auto_gear_change_time = "0"
-            gear_change_time = "0.3"
-        
-        xml = f'''<?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<motorConfigurations>
-    <motorConfiguration name="{transmission_data['name']}" hp="0" price="{transmission_data['cost']}">
-        <motor torqueScale="1.0" minRpm="1000" maxRpm="6000" maxForwardSpeed="{transmission_data['top_speed']}" maxBackwardSpeed="22" brakeForce="2" lowBrakeForceScale="0.1" dampingRateScale="0.2">
-            <torque rpm="1000" torque="1.0"/>
-            <torque rpm="6000" torque="1.0"/>
-        </motor>
-        <transmission autoGearChangeTime="{auto_gear_change_time}" gearChangeTime="{gear_change_time}" name="{transmission_data['name']}" axleRatio="25" startGearThreshold="0.3">
-            <directionChange useGear="true"/>
-'''
-        
-        # Add reverse gears
-        for i, ratio in enumerate(gear_ratios['reverse']):
-            xml += f'            <backwardGear gearRatio="{ratio:.3f}" name="R{i+1 if len(gear_ratios["reverse"]) > 1 else ""}"/>\n'
-        
-        # Add forward gears
-        for i, ratio in enumerate(gear_ratios['forward']):
-            xml += f'            <forwardGear gearRatio="{ratio:.3f}"/>\n'
-        
-        xml += '''        </transmission>
-    </motorConfiguration>
-</motorConfigurations>'''
-        
-        # Format the XML for better readability
+        top = transmission_data["top_speed"]
+        xml = (
+            '<?xml version="1.0" encoding="utf-8" standalone="no" ?>'
+            "<motorConfigurations>"
+            f'<motorConfiguration name="{_esc(transmission_data["name"])}" '
+            f'hp="0" price="{_fmt_num(transmission_data["cost"])}">'
+            f'<motor torqueScale="1.0" minRpm="1000" maxRpm="6000" '
+            f'maxForwardSpeed="{_fmt_num(top)}" maxBackwardSpeed="22" '
+            f'brakeForce="2" lowBrakeForceScale="0.1" dampingRateScale="0.2">'
+            '<torque rpm="1000" torque="1.0"/>'
+            '<torque rpm="6000" torque="1.0"/>'
+            "</motor>"
+            + XMLGenerator._transmission_xml(spec)
+            + "</motorConfiguration></motorConfigurations>"
+        )
         return XMLGenerator.format_xml(xml)
-    
+
     @staticmethod
     def generate_combined_fs25_xml(engine_data: Dict, transmission_data: Dict) -> str:
-        """
-        Generate combined engine and transmission XML in FS25 format.
-        
-        Args:
-            engine_data: Dictionary containing engine specifications
-            transmission_data: Dictionary containing transmission specifications
-            
-        Returns:
-            Formatted XML string
-        """
-        torque_curve = TorqueCurveGenerator.generate_torque_curve(
-            engine_data['horsepower'],
-            engine_data['min_rpm'],
-            engine_data['max_rpm'],
-            engine_data['turbocharged']
+        points = XMLGenerator._torque_points(engine_data)
+        spec = GearRatioCalculator.build_transmission(
+            transmission_data["type"],
+            transmission_data["num_forward"],
+            transmission_data["num_reverse"],
+            transmission_data["top_speed"],
+            transmission_data.get("enable_low_gearing", False),
+            transmission_data.get("low_gear_boost", 25.0),
+            XMLGenerator._custom_axle(transmission_data),
         )
-        
-        # Convert normalized RPM back to actual RPM for FS25 format
-        actual_rpm_torque = []
-        for norm_rpm, torque in torque_curve:
-            actual_rpm = norm_rpm * engine_data['max_rpm']
-            # Convert torque to scale (0-1 range)
-            torque_scale = torque / max(torque for _, torque in torque_curve)
-            actual_rpm_torque.append((actual_rpm, torque_scale))
-        
-        gear_ratios = GearRatioCalculator.calculate_gear_ratios(
-            transmission_data['type'],
-            transmission_data['num_forward'],
-            transmission_data['num_reverse'],
-            transmission_data['top_speed'],
-            transmission_data.get('enable_low_gearing', False),
-            transmission_data.get('low_gear_boost', 25.0)
+        torque_scale = TorqueCurveGenerator.torque_scale_from_hp(
+            engine_data["horsepower"], engine_data["max_rpm"]
         )
-        
-        # Determine transmission type for FS25
-        if transmission_data['type'].lower() == 'automatic':
-            auto_gear_change_time = "1"
-            gear_change_time = "0.3"
-        else:
-            auto_gear_change_time = "0"
-            gear_change_time = "0.3"
-        
-        xml = f'''<?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<motorConfigurations>
-    <motorConfiguration name="{engine_data['name']} - {transmission_data['name']}" hp="{engine_data['horsepower']}" price="{engine_data['cost'] + transmission_data['cost']}">
-        <motor torqueScale="{engine_data['fuel_usage_scale']}" minRpm="{engine_data['min_rpm']}" maxRpm="{engine_data['max_rpm']}" maxForwardSpeed="{transmission_data['top_speed']}" maxBackwardSpeed="22" brakeForce="2" lowBrakeForceScale="0.1" dampingRateScale="0.2">
-'''
-        
-        for rpm, torque_scale in actual_rpm_torque:
-            xml += f'            <torque rpm="{rpm:.0f}" torque="{torque_scale:.2f}"/>\n'
-        
-        xml += f'''        </motor>
-        <transmission autoGearChangeTime="{auto_gear_change_time}" gearChangeTime="{gear_change_time}" name="{transmission_data['name']}" axleRatio="25" startGearThreshold="0.3">
-            <directionChange useGear="true"/>
-'''
-        
-        # Add reverse gears
-        for i, ratio in enumerate(gear_ratios['reverse']):
-            xml += f'            <backwardGear gearRatio="{ratio:.3f}" name="R{i+1 if len(gear_ratios["reverse"]) > 1 else ""}"/>\n'
-        
-        # Add forward gears
-        for i, ratio in enumerate(gear_ratios['forward']):
-            xml += f'            <forwardGear gearRatio="{ratio:.3f}"/>\n'
-        
-        xml += '''        </transmission>
-    </motorConfiguration>
-</motorConfigurations>'''
-        
-        # Format the XML for better readability
+        top = transmission_data["top_speed"]
+        max_back = 22 if spec["family"] != "discrete_maxSpeed" else round(min(32.0, top * 0.4), 1)
+        config_name = f'{engine_data["name"]} - {transmission_data["name"]}'
+        price = engine_data["cost"] + transmission_data["cost"]
+        xml = (
+            '<?xml version="1.0" encoding="utf-8" standalone="no" ?>'
+            "<motorConfigurations>"
+            f'<motorConfiguration name="{_esc(config_name)}" '
+            f'hp="{_fmt_num(engine_data["horsepower"])}" '
+            f'price="{_fmt_num(price)}" consumerConfigurationIndex="1">'
+            + XMLGenerator._motor_open(
+                engine_data,
+                max_forward=top,
+                max_backward=max_back,
+                torque_scale=torque_scale,
+            )
+            + XMLGenerator._torque_xml(points)
+            + "</motor>"
+            + XMLGenerator._transmission_xml(spec)
+            + "</motorConfiguration></motorConfigurations>"
+            + XMLGenerator._consumer_xml(engine_data)
+        )
         return XMLGenerator.format_xml(xml)
-
-

@@ -1,94 +1,281 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
+
+
+L10N = {
+    "Automatic": "$l10n_info_transmission_automatic",
+    "Manual": "$l10n_info_transmission_manual",
+    "CVT": "$l10n_info_transmission_cvt",
+    "PowerShift": "$l10n_info_transmission_powerShift",
+}
+
+
+def _geometric(first: float, last: float, count: int) -> List[float]:
+    if count <= 0:
+        return []
+    if count == 1:
+        return [round(first, 3)]
+    step = (last / first) ** (1.0 / (count - 1))
+    return [round(first * (step ** i), 3) for i in range(count)]
+
+
+def _clamp(value: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, value))
+
 
 class GearRatioCalculator:
     """
-    Handles gear ratio calculations for transmissions.
-    Supports low gearing options for enhanced torque output.
+    Builds FS25 transmission data per Type family (not a US 4.10 axle stamp).
     """
-    
+
     @staticmethod
-    def calculate_gear_ratios(transmission_type: str, num_forward: int, 
-                             num_reverse: int, top_speed: float,
-                             enable_low_gearing: bool = False, 
-                             low_gear_boost: float = 25.0) -> Dict[str, List[float]]:
-        """
-        Calculate gear ratios for transmission.
-        
-        Args:
-            transmission_type: Type of transmission (Manual, Automatic, etc.)
-            num_forward: Number of forward gears
-            num_reverse: Number of reverse gears
-            top_speed: Top speed in km/h
-            enable_low_gearing: Whether to enable low gearing
-            low_gear_boost: Percentage boost for low gears
-            
-        Returns:
-            Dictionary with 'forward' and 'reverse' gear ratios
-        """
-        # Validate input parameters to prevent division by zero
+    def calculate_gear_ratios(
+        transmission_type: str,
+        num_forward: int,
+        num_reverse: int,
+        top_speed: float,
+        enable_low_gearing: bool = False,
+        low_gear_boost: float = 25.0,
+    ) -> Dict[str, List[float]]:
+        spec = GearRatioCalculator.build_transmission(
+            transmission_type,
+            num_forward,
+            num_reverse,
+            top_speed,
+            enable_low_gearing,
+            low_gear_boost,
+        )
+        forward = [
+            g["gearRatio"]
+            for g in spec.get("forward", [])
+            if "gearRatio" in g
+        ]
+        reverse = [
+            g["gearRatio"]
+            for g in spec.get("backward", [])
+            if "gearRatio" in g
+        ]
+        return {"forward": forward, "reverse": reverse}
+
+    @staticmethod
+    def build_transmission(
+        transmission_type: str,
+        num_forward: int,
+        num_reverse: int,
+        top_speed: float,
+        enable_low_gearing: bool = False,
+        low_gear_boost: float = 25.0,
+        custom_axle_ratio: Optional[float] = None,
+    ) -> Dict:
         if num_forward <= 0:
             raise ValueError("Number of forward gears must be greater than 0")
         if num_reverse < 0:
             raise ValueError("Number of reverse gears cannot be negative")
         if top_speed <= 0:
             raise ValueError("Top speed must be greater than 0")
-        
-        # Base gear ratios based on transmission type
-        forward_ratios = []
-        reverse_ratios = []
-        
-        # Calculate forward gear ratios based on FS25 example
-        for i in range(num_forward):
-            if transmission_type == "CVT":
-                # CVT has continuous ratios with smooth progression
-                if num_forward == 1:
-                    ratio = 4.2  # Single gear CVT
-                else:
-                    ratio = 4.2 - (3.0 * i / (num_forward - 1))
-            elif transmission_type == "Automatic":
-                # Automatic has closer ratios for smooth shifting
-                if num_forward == 1:
-                    ratio = 4.5  # Single gear automatic
-                else:
-                    ratio = 4.5 - (3.2 * i / (num_forward - 1))
-            elif transmission_type == "PowerShift":
-                # PowerShift has very close ratios for performance
-                if num_forward == 1:
-                    ratio = 4.8  # Single gear PowerShift
-                else:
-                    ratio = 4.8 - (3.5 * i / (num_forward - 1))
+
+        kind = (transmission_type or "Manual").strip()
+        if kind.lower() == "cvt":
+            spec = GearRatioCalculator._cvt(top_speed)
+        elif kind.lower() == "powershift":
+            spec = GearRatioCalculator._powershift(
+                num_forward, num_reverse, top_speed
+            )
+        elif kind.lower() == "automatic":
+            spec = GearRatioCalculator._automatic(
+                num_forward,
+                num_reverse,
+                top_speed,
+                enable_low_gearing,
+                low_gear_boost,
+            )
+        else:
+            spec = GearRatioCalculator._manual(
+                num_forward,
+                num_reverse,
+                top_speed,
+                enable_low_gearing,
+                low_gear_boost,
+            )
+
+        if (
+            custom_axle_ratio is not None
+            and spec.get("family") != "continuous_minMaxRatio"
+        ):
+            spec["axle_ratio"] = custom_axle_ratio
+        return spec
+
+    @staticmethod
+    def _apply_low_gearing(
+        ratios: List[float],
+        enable: bool,
+        boost_pct: float,
+    ) -> List[float]:
+        if not enable or not ratios:
+            return ratios
+        cutoff = max(1, int(len(ratios) * 0.25))
+        factor = 1.0 + (boost_pct / 100.0)
+        out = []
+        for i, ratio in enumerate(ratios):
+            if i < cutoff:
+                out.append(round(ratio * factor, 3))
             else:
-                # Manual transmission ratios based on FS25 example
-                # Example: 4.784, 2.423, 1.443, 1.000, 0.826, 0.643
-                if num_forward == 1:
-                    ratio = 4.784  # Single gear manual
-                elif num_forward == 6:
-                    ratios = [4.784, 2.423, 1.443, 1.000, 0.826, 0.643]
-                    ratio = ratios[i] if i < len(ratios) else 4.0 - (3.0 * i / (num_forward - 1))
-                elif num_forward == 7:
-                    ratios = [5.0, 2.8, 1.8, 1.2, 1.000, 0.8, 0.6]
-                    ratio = ratios[i] if i < len(ratios) else 4.0 - (3.0 * i / (num_forward - 1))
-                else:
-                    # Generic manual ratios
-                    ratio = 4.8 - (3.5 * i / (num_forward - 1))
-            
-            # Apply low gearing if enabled
-            if enable_low_gearing and i < num_forward * 0.25:
-                boost_factor = 1.0 + (low_gear_boost / 100.0)
-                ratio *= boost_factor
-            
-            forward_ratios.append(round(ratio, 3))
-        
-        # Calculate reverse gear ratios (typically higher than 1st gear)
-        for i in range(num_reverse):
-            ratio = forward_ratios[0] * (1.2 + i * 0.3)
-            reverse_ratios.append(round(ratio, 3))
-        
+                out.append(ratio)
+        return out
+
+    @staticmethod
+    def _highway_axle(top_speed: float, truck: bool) -> float:
+        if truck:
+            if top_speed >= 100:
+                return 12.5
+            if top_speed >= 80:
+                return 10.0
+            return 8.0
+        if top_speed >= 140:
+            return 15.0
+        if top_speed >= 100:
+            return 25.0
+        if top_speed >= 80:
+            return 19.0
+        return 15.0
+
+    @staticmethod
+    def _automatic(
+        num_forward: int,
+        num_reverse: int,
+        top_speed: float,
+        enable_low_gearing: bool,
+        low_gear_boost: float,
+    ) -> Dict:
+        # Allison-shaped band: ~4.70 first, ~0.61 overdrive (not a linear 4.5→1.3).
+        if num_forward == 6:
+            forward = [4.784, 2.423, 1.443, 1.000, 0.826, 0.643]
+        else:
+            forward = _geometric(4.70, 0.61, num_forward)
+        forward = GearRatioCalculator._apply_low_gearing(
+            forward, enable_low_gearing, low_gear_boost
+        )
+        reverse_count = max(1, num_reverse) if num_reverse == 0 else num_reverse
+        if reverse_count == 1:
+            reverse = [round(forward[0] * 1.036, 3)]
+        else:
+            reverse = [
+                round(forward[0] * (1.036 + i * 0.25), 3)
+                for i in range(reverse_count)
+            ]
+        axle = GearRatioCalculator._highway_axle(top_speed, truck=False)
         return {
-            'forward': forward_ratios,
-            'reverse': reverse_ratios
+            "family": "discrete_gearRatio",
+            "l10n_name": L10N["Automatic"],
+            "axle_ratio": axle,
+            "auto_gear_change_time": 1.0,
+            "gear_change_time": 0.3,
+            "start_gear_threshold": 0.3,
+            "forward": [{"gearRatio": r} for r in forward],
+            "backward": [
+                {
+                    "gearRatio": r,
+                    "name": "R" if len(reverse) == 1 else f"R{i + 1}",
+                }
+                for i, r in enumerate(reverse)
+            ],
         }
 
+    @staticmethod
+    def _manual(
+        num_forward: int,
+        num_reverse: int,
+        top_speed: float,
+        enable_low_gearing: bool,
+        low_gear_boost: float,
+    ) -> Dict:
+        truck = num_forward >= 10
+        if num_forward == 6 and not truck:
+            forward = [4.784, 2.423, 1.443, 1.000, 0.826, 0.643]
+        elif truck:
+            forward = _geometric(13.91, 0.71, num_forward)
+        else:
+            forward = _geometric(4.784, 0.643, num_forward)
+        forward = GearRatioCalculator._apply_low_gearing(
+            forward, enable_low_gearing, low_gear_boost
+        )
+        if num_reverse <= 0:
+            reverse: List[float] = []
+        elif num_reverse == 1:
+            reverse = [round(forward[0] * 1.15, 3)]
+        else:
+            reverse = [
+                round(forward[0] * (1.15 + i * 0.2), 3)
+                for i in range(num_reverse)
+            ]
+        axle = GearRatioCalculator._highway_axle(top_speed, truck=truck)
+        return {
+            "family": "discrete_gearRatio",
+            "l10n_name": L10N["Manual"],
+            "axle_ratio": axle,
+            "auto_gear_change_time": 0.3,
+            "gear_change_time": 0.3,
+            "start_gear_threshold": 0.3,
+            "forward": [{"gearRatio": r} for r in forward],
+            "backward": [
+                {
+                    "gearRatio": r,
+                    "name": "R" if len(reverse) == 1 else f"R{i + 1}",
+                }
+                for i, r in enumerate(reverse)
+            ],
+        }
 
+    @staticmethod
+    def _cvt(top_speed: float) -> Dict:
+        min_fwd = round(_clamp(12.3 * (53.0 / top_speed), 8.8, 40.0), 1)
+        min_back = round(_clamp(min_fwd * 2.6, 16.0, 80.0), 1)
+        return {
+            "family": "continuous_minMaxRatio",
+            "l10n_name": L10N["CVT"],
+            "axle_ratio": None,
+            "auto_gear_change_time": None,
+            "gear_change_time": None,
+            "start_gear_threshold": None,
+            "min_forward_gear_ratio": min_fwd,
+            "max_forward_gear_ratio": 320.0,
+            "min_backward_gear_ratio": min_back,
+            "max_backward_gear_ratio": 320.0,
+            "forward": [],
+            "backward": [],
+        }
+
+    @staticmethod
+    def _powershift(
+        num_forward: int,
+        num_reverse: int,
+        top_speed: float,
+    ) -> Dict:
+        first = round(max(2.2, top_speed * 0.05), 1)
+        last = round(top_speed, 1)
+        forward_speeds = _geometric(first, last, num_forward)
+        if num_reverse <= 0:
+            reverse_speeds: List[float] = []
+        else:
+            r_last = round(min(top_speed * 0.35, last * 0.4), 1)
+            reverse_speeds = _geometric(first, max(first, r_last), num_reverse)
+        return {
+            "family": "discrete_maxSpeed",
+            "l10n_name": L10N["PowerShift"],
+            "axle_ratio": 0.95,
+            "auto_gear_change_time": 0.0,
+            "gear_change_time": 0.0,
+            "start_gear_threshold": None,
+            "forward": [
+                {"maxSpeed": s, "name": str(i + 1)}
+                for i, s in enumerate(forward_speeds)
+            ],
+            "backward": [
+                {
+                    "maxSpeed": s,
+                    "name": "R" if len(reverse_speeds) == 1 else f"R{i + 1}",
+                }
+                for i, s in enumerate(reverse_speeds)
+            ],
+        }

@@ -40,6 +40,9 @@ RELEASE_BODY.md
 # Local-only notes (never commit — personal / future work reminders)
 LOCAL_NOTES.md
 
+# Local FS25 vehicle-XML research dump (Giants install scan; not for GitHub)
+/database/
+
 # Runtime data next to the app / project root (portable presets, settings, logs)
 /Custom Presets/
 /settings.json

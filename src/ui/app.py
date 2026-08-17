@@ -37,6 +37,16 @@ import sys
 
 logger = logging.getLogger("fs25config.app")
 
+AXLE_RATIO_TOOLTIP = (
+    "Giants axleRatio — vanilla ranges:\n"
+    "cars/pickups ~15–25\n"
+    "heavy SUV ~18–19\n"
+    "light truck ~18–19\n"
+    "highway trucks ~8–12.5\n"
+    "PowerShift ~0.95–1.0\n" 
+    "Unchecked = auto default."
+)
+
 class Tooltip:
     """
     Simple tooltip widget for providing help text on hover.
@@ -67,10 +77,17 @@ class Tooltip:
         self.tooltip_window.wm_overrideredirect(True)
         self.tooltip_window.wm_geometry(f"+{x}+{y}")
         
-        label = tk.Label(self.tooltip_window, text=self.text, 
-                        justify=tk.LEFT, background="#2d2d2d", 
-                        foreground="#ffffff", relief=tk.SOLID, 
-                        borderwidth=1, font=("Arial", 8))
+        label = tk.Label(
+            self.tooltip_window,
+            text=self.text,
+            justify=tk.LEFT,
+            background="#2d2d2d",
+            foreground="#ffffff",
+            relief=tk.SOLID,
+            borderwidth=1,
+            font=("Arial", 8),
+            wraplength=320,
+        )
         label.pack()
     
     def hide_tooltip(self, event=None):
@@ -135,10 +152,14 @@ class FS25ConfigTool:
             'num_forward': tk.StringVar(value="6"),
             'num_reverse': tk.StringVar(value="1"),
             'enable_low_gearing': tk.BooleanVar(value=False),
-            'low_gear_boost': tk.StringVar(value="25.0")
+            'low_gear_boost': tk.StringVar(value="25.0"),
+            'use_custom_axle_ratio': tk.BooleanVar(value=False),
+            'axle_ratio': tk.StringVar(value=""),
         }
         
-        # Store dropdown references for refresh functionality
+        self._transmission_axle_row = None
+        self._transmission_axle_entry = None
+        self._transmission_axle_use_ctk = False
         self.engine_preset_dropdown = None
         self.transmission_preset_dropdown = None
         
@@ -644,6 +665,8 @@ class FS25ConfigTool:
         )
         boost_entry.pack(side=tk.LEFT)
         Tooltip(boost_entry, "Percentage boost for low gears (e.g., 25 for 25% boost)")
+
+        self._setup_transmission_axle_row(fields, use_ctk=True)
     
     def setup_standard_transmission_tab(self, parent):
         """Set up transmission panel using standard Tkinter widgets (compact paired fields)."""
@@ -743,6 +766,8 @@ class FS25ConfigTool:
         )
         boost_entry.pack(side=tk.LEFT, padx=4)
         Tooltip(boost_entry, "Percentage boost for low gears (e.g., 25 for 25% boost)")
+
+        self._setup_transmission_axle_row(fields, use_ctk=False)
     
     def setup_output_tab(self, parent):
         """Set up the output tab with XML preview and action buttons."""
@@ -1210,6 +1235,97 @@ class FS25ConfigTool:
                 entry_width=right_width, expand=False, fill_row=False,
             )
 
+    def _setup_transmission_axle_row(self, parent, *, use_ctk: bool):
+        """Optional Giants axleRatio override (hidden for CVT)."""
+        self._transmission_axle_use_ctk = use_ctk
+        if use_ctk:
+            row = ctk.CTkFrame(parent, fg_color="transparent")
+            check = ctk.CTkCheckBox(
+                row,
+                text="Custom axle ratio",
+                variable=self.transmission_data['use_custom_axle_ratio'],
+                width=140,
+            )
+            check.pack(side=tk.LEFT, padx=(0, 8))
+            Tooltip(check, AXLE_RATIO_TOOLTIP)
+            label = ctk.CTkLabel(row, text="Giants axle:")
+            label.pack(side=tk.LEFT, padx=(0, 6))
+            entry = ctk.CTkEntry(
+                row,
+                textvariable=self.transmission_data['axle_ratio'],
+                width=70,
+            )
+            entry.pack(side=tk.LEFT)
+        else:
+            row = tk.Frame(parent, bg=self.colors['bg'])
+            check = tk.Checkbutton(
+                row,
+                text="Custom axle ratio",
+                variable=self.transmission_data['use_custom_axle_ratio'],
+                bg=self.colors['bg'],
+                fg=self.colors['fg'],
+                selectcolor=self.colors['input_bg'],
+            )
+            check.pack(side=tk.LEFT, padx=(0, 8))
+            Tooltip(check, AXLE_RATIO_TOOLTIP)
+            label = tk.Label(
+                row,
+                text="Giants axle:",
+                bg=self.colors['bg'],
+                fg=self.colors['fg'],
+            )
+            label.pack(side=tk.LEFT, padx=(0, 6))
+            entry = tk.Entry(
+                row,
+                textvariable=self.transmission_data['axle_ratio'],
+                bg=self.colors['input_bg'],
+                fg=self.colors['fg'],
+                relief=tk.SOLID,
+                borderwidth=1,
+                width=8,
+            )
+            entry.pack(side=tk.LEFT)
+
+        Tooltip(label, AXLE_RATIO_TOOLTIP)
+        Tooltip(entry, AXLE_RATIO_TOOLTIP)
+        row.pack(fill=tk.X, pady=3)
+        self._transmission_axle_row = row
+        self._transmission_axle_entry = entry
+
+        self.transmission_data['type'].trace_add(
+            'write', self._sync_transmission_axle_ui
+        )
+        self.transmission_data['use_custom_axle_ratio'].trace_add(
+            'write', self._sync_transmission_axle_ui
+        )
+        self._sync_transmission_axle_ui()
+
+    def _sync_transmission_axle_ui(self, *_args):
+        """Show axle row for geared types; enable entry only when custom is checked."""
+        row = self._transmission_axle_row
+        entry = self._transmission_axle_entry
+        if row is None or entry is None:
+            return
+
+        is_cvt = (
+            self.transmission_data['type'].get().strip().lower() == 'cvt'
+        )
+        use_custom = self.transmission_data['use_custom_axle_ratio'].get()
+
+        if is_cvt:
+            row.pack_forget()
+            if use_custom:
+                self.transmission_data['use_custom_axle_ratio'].set(False)
+            return
+
+        if not row.winfo_ismapped():
+            row.pack(fill=tk.X, pady=3)
+
+        if self._transmission_axle_use_ctk:
+            entry.configure(state="normal" if use_custom else "disabled")
+        else:
+            entry.configure(state="normal" if use_custom else "disabled")
+
     def apply_dark_theme(self):
         """Apply dark theme styling to the application."""
         style = ttk.Style()
@@ -1391,6 +1507,14 @@ class FS25ConfigTool:
             self.transmission_data['num_reverse'].set(str(preset['num_reverse']))
             self.transmission_data['enable_low_gearing'].set(preset['enable_low_gearing'])
             self.transmission_data['low_gear_boost'].set(str(preset['low_gear_boost']))
+            self.transmission_data['use_custom_axle_ratio'].set(
+                bool(preset.get('use_custom_axle_ratio', False))
+            )
+            if preset.get('use_custom_axle_ratio') and 'axle_ratio' in preset:
+                self.transmission_data['axle_ratio'].set(str(preset['axle_ratio']))
+            else:
+                self.transmission_data['axle_ratio'].set('')
+            self._sync_transmission_axle_ui()
     
     def get_engine_data(self):
         """Get current engine data from form variables."""
@@ -1444,6 +1568,7 @@ class FS25ConfigTool:
             num_reverse = int(self.transmission_data['num_reverse'].get())
             enable_low_gearing = self.transmission_data['enable_low_gearing'].get()
             low_gear_boost = float(self.transmission_data['low_gear_boost'].get())
+            use_custom_axle_ratio = self.transmission_data['use_custom_axle_ratio'].get()
             
             # Validate input values
             if not name:
@@ -1460,8 +1585,23 @@ class FS25ConfigTool:
                 raise ValueError("Number of reverse gears cannot be negative")
             if low_gear_boost < 0:
                 raise ValueError("Low gear boost cannot be negative")
+
+            axle_ratio = None
+            if use_custom_axle_ratio:
+                if trans_type == "CVT":
+                    raise ValueError(
+                        "Custom axle ratio does not apply to CVT transmissions"
+                    )
+                axle_text = self.transmission_data['axle_ratio'].get().strip()
+                if not axle_text:
+                    raise ValueError(
+                        "Enter a Giants axle ratio, or uncheck Custom axle ratio"
+                    )
+                axle_ratio = float(axle_text)
+                if axle_ratio <= 0:
+                    raise ValueError("Axle ratio must be greater than 0")
             
-            return {
+            payload = {
                 'name': name,
                 'type': trans_type,
                 'cost': cost,
@@ -1469,8 +1609,12 @@ class FS25ConfigTool:
                 'num_forward': num_forward,
                 'num_reverse': num_reverse,
                 'enable_low_gearing': enable_low_gearing,
-                'low_gear_boost': low_gear_boost
+                'low_gear_boost': low_gear_boost,
+                'use_custom_axle_ratio': use_custom_axle_ratio,
             }
+            if use_custom_axle_ratio:
+                payload['axle_ratio'] = axle_ratio
+            return payload
         except ValueError as e:
             raise ValueError(f"Invalid numeric input in transmission data: {str(e)}")
         except Exception as e:
@@ -1790,6 +1934,14 @@ class FS25ConfigTool:
                             self.transmission_data['num_reverse'].set(str(trans['num_reverse']))
                             self.transmission_data['enable_low_gearing'].set(bool(trans['enable_low_gearing']))
                             self.transmission_data['low_gear_boost'].set(str(trans['low_gear_boost']))
+                            self.transmission_data['use_custom_axle_ratio'].set(
+                                bool(trans.get('use_custom_axle_ratio', False))
+                            )
+                            if trans.get('use_custom_axle_ratio') and 'axle_ratio' in trans:
+                                self.transmission_data['axle_ratio'].set(str(trans['axle_ratio']))
+                            else:
+                                self.transmission_data['axle_ratio'].set('')
+                            self._sync_transmission_axle_ui()
                         except (KeyError, ValueError, TypeError) as e:
                             show_error("Error", f"Invalid transmission data in preset: {str(e)}")
                             return

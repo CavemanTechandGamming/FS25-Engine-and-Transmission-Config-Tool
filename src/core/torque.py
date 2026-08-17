@@ -77,4 +77,31 @@ class TorqueCurveGenerator:
         
         return torque_points
 
+    @staticmethod
+    def torque_scale_from_hp(hp: float, max_rpm: float) -> float:
+        """Giants ``torqueScale`` is an HP scaler, not fuel use.
+
+        Blend vanilla pickup (300 hp / 6000 rpm / 0.595) and Magnum
+        (374 hp / 2200 rpm / 1.579) by redline.
+        """
+        if hp <= 0:
+            raise ValueError("Horsepower must be greater than 0")
+        if max_rpm <= 0:
+            raise ValueError("Maximum RPM must be greater than 0")
+        k_hi = 0.595 / 300.0
+        k_lo = 1.579 / 374.0
+        t = (max_rpm - 2200.0) / (6000.0 - 2200.0)
+        t = max(0.0, min(1.0, t))
+        k = k_lo + (k_hi - k_lo) * t
+        return round(hp * k, 3)
+
+    @staticmethod
+    def consumer_usage(hp: float, fuel_usage_scale: float) -> float:
+        """``<consumer usage>`` liters/hour-style scale. Pickup 300 hp uses 60."""
+        if hp <= 0:
+            raise ValueError("Horsepower must be greater than 0")
+        if fuel_usage_scale <= 0:
+            raise ValueError("Fuel usage scale must be greater than 0")
+        return round(60.0 * (hp / 300.0) * fuel_usage_scale, 1)
+
 
