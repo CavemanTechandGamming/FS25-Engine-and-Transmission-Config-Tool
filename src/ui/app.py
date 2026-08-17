@@ -68,15 +68,10 @@ class Tooltip:
         self.widget.bind('<Leave>', self.hide_tooltip)
     
     def show_tooltip(self, event=None):
-        """Display tooltip when mouse enters widget."""
-        x, y, _, _ = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 20
-        
+        """Display tooltip below the widget, flipping above if needed."""
         self.tooltip_window = tk.Toplevel(self.widget)
         self.tooltip_window.wm_overrideredirect(True)
-        self.tooltip_window.wm_geometry(f"+{x}+{y}")
-        
+
         label = tk.Label(
             self.tooltip_window,
             text=self.text,
@@ -85,10 +80,40 @@ class Tooltip:
             foreground="#ffffff",
             relief=tk.SOLID,
             borderwidth=1,
-            font=("Arial", 8),
-            wraplength=320,
+            font=("Arial", 10),
+            wraplength=340,
         )
         label.pack()
+
+        self.tooltip_window.update_idletasks()
+
+        widget = self.widget
+        wx = widget.winfo_rootx()
+        wy = widget.winfo_rooty()
+        ww = max(widget.winfo_width(), 1)
+        wh = max(widget.winfo_height(), 1)
+        tw = self.tooltip_window.winfo_width()
+        th = self.tooltip_window.winfo_height()
+        sw = self.tooltip_window.winfo_screenwidth()
+        sh = self.tooltip_window.winfo_screenheight()
+        margin = 4
+        gap = 6
+
+        x = wx
+        y = wy + wh + gap
+        if y + th + margin > sh:
+            y = wy - th - gap
+
+        if x + tw + margin > sw:
+            x = max(margin, sw - tw - margin)
+        if y + th + margin > sh:
+            y = max(margin, sh - th - margin)
+        if y < margin:
+            y = margin
+        if x < margin:
+            x = margin
+
+        self.tooltip_window.wm_geometry(f"+{x}+{y}")
     
     def hide_tooltip(self, event=None):
         """Hide tooltip when mouse leaves widget."""
