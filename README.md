@@ -26,9 +26,9 @@ Desktop app for generating Farming Simulator 25 engine and transmission XML conf
 ## Features
 
 - Dark-mode GUI (CustomTkinter, with Tkinter fallback)
-- Engine setup with auto-generated torque curves (turbo and naturally aspirated)
+- Engine setup with auto-generated torque curves (turbo and naturally aspirated); shipped diesel presets use real engine-dyno shapes
 - Transmission support: Manual, Automatic, CVT, PowerShift
-- Built-in presets plus **custom** engine/transmission presets (saved next to the app by default)
+- Factory presets as JSON under `Presets/Engine` and `Presets/Transmission`, plus custom presets in the same folders (default: next to the app)
 - Settings for preset folder location, startup defaults, and log access
 - FS25-compatible XML export with syntax-highlighted preview
 - Copy to clipboard and portable multi-platform builds

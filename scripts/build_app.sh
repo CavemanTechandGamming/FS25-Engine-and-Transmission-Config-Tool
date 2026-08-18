@@ -79,6 +79,7 @@ pyinstaller \
   --icon "$ROOT/assets/app_icon.png" \
   --add-data "$ROOT/assets/app_icon_256.png:assets" \
   --add-data "$ROOT/assets/app_icon.ico:assets" \
+  --add-data "$ROOT/Presets:Presets" \
   --distpath "dist/${PLATFORM}/${VERSION}/portable" \
   --workpath "build/${PLATFORM}/${VERSION}/portable" \
   --specpath "build/${PLATFORM}/${VERSION}/portable" \

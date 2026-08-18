@@ -5,9 +5,12 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-ENGINE_PRESETS_DIRNAME = "Engine presets"
-TRANSMISSION_PRESETS_DIRNAME = "Transmission presets"
-DEFAULT_PRESETS_FOLDER_NAME = "Custom Presets"
+ENGINE_PRESETS_DIRNAME = "Engine"
+TRANSMISSION_PRESETS_DIRNAME = "Transmission"
+DEFAULT_PRESETS_FOLDER_NAME = "Presets"
+LEGACY_PRESETS_FOLDER_NAME = "Custom Presets"
+LEGACY_ENGINE_PRESETS_DIRNAME = "Engine presets"
+LEGACY_TRANSMISSION_PRESETS_DIRNAME = "Transmission presets"
 SETTINGS_FILENAME = "settings.json"
 LOG_FILENAME = "fs25_config_tool.log"
 
@@ -27,6 +30,10 @@ def default_presets_root() -> Path:
     return get_app_dir() / DEFAULT_PRESETS_FOLDER_NAME
 
 
+def legacy_presets_root() -> Path:
+    return get_app_dir() / LEGACY_PRESETS_FOLDER_NAME
+
+
 def settings_path() -> Path:
     return get_app_dir() / SETTINGS_FILENAME
 
@@ -40,6 +47,11 @@ def resource_root() -> Path:
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         return Path(sys._MEIPASS)
     return Path(__file__).resolve().parents[2]
+
+
+def bundled_presets_root() -> Path:
+    """Shipped factory presets (read-only in a frozen build)."""
+    return resource_root() / DEFAULT_PRESETS_FOLDER_NAME
 
 
 def app_icon_png() -> Path | None:
@@ -72,8 +84,27 @@ def transmission_presets_dir(presets_root: Path) -> Path:
     return Path(presets_root) / TRANSMISSION_PRESETS_DIRNAME
 
 
+def engine_preset_scan_dirs(presets_root: Path) -> list[Path]:
+    """Current Engine/ folder plus legacy 'Engine presets' if it still exists."""
+    root = Path(presets_root)
+    dirs = [root / ENGINE_PRESETS_DIRNAME]
+    legacy = root / LEGACY_ENGINE_PRESETS_DIRNAME
+    if legacy.is_dir() and legacy.resolve() != dirs[0].resolve():
+        dirs.append(legacy)
+    return dirs
+
+
+def transmission_preset_scan_dirs(presets_root: Path) -> list[Path]:
+    root = Path(presets_root)
+    dirs = [root / TRANSMISSION_PRESETS_DIRNAME]
+    legacy = root / LEGACY_TRANSMISSION_PRESETS_DIRNAME
+    if legacy.is_dir() and legacy.resolve() != dirs[0].resolve():
+        dirs.append(legacy)
+    return dirs
+
+
 def ensure_presets_tree(presets_root: Path) -> None:
-    """Create Custom Presets / Engine presets / Transmission presets if missing."""
+    """Create Presets / Engine / Transmission if missing."""
     root = Path(presets_root)
     root.mkdir(parents=True, exist_ok=True)
     engine_presets_dir(root).mkdir(parents=True, exist_ok=True)

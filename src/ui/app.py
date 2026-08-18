@@ -20,6 +20,12 @@ from src import __version__
 from src.core.logging_setup import setup_logging
 from src.core.paths import app_icon_ico, app_icon_png
 from src.core.presets import PresetManager
+from src.core.preset_schema import (
+    DRIVE_LAYOUT_CHOICES,
+    DRIVE_LAYOUT_LABELS,
+    drive_layout_key,
+    wrap_configuration_file,
+)
 from src.core import settings as app_settings
 from src.core.xml_gen import XMLGenerator
 from src.ui.about import show_about
@@ -36,14 +42,6 @@ import logging
 import sys
 
 logger = logging.getLogger("fs25config.app")
-
-DRIVE_LAYOUT_LABELS: Dict[str, str] = {
-    "Four-wheel drive (4WD)": "4wd",
-    "Front-wheel drive (FWD)": "fwd",
-    "Rear-wheel drive (RWD)": "rwd",
-    "Six-wheel drive (6×6)": "6x6",
-}
-DRIVE_LAYOUT_CHOICES = list(DRIVE_LAYOUT_LABELS.keys())
 
 DRIVE_LAYOUT_TOOLTIP = (
     "Which wheels receive engine torque.\n"
@@ -182,6 +180,7 @@ class FS25ConfigTool:
             'fuel_usage_scale': tk.StringVar(value="1.0"),
             'turbocharged': tk.BooleanVar(value=False)
         }
+        self._engine_torque_curve = None
         
         self.transmission_data = {
             'name': tk.StringVar(value="Custom Transmission"),
@@ -495,7 +494,7 @@ class FS25ConfigTool:
             command=self.save_custom_engine_preset,
         )
         save_preset_btn.pack(side=tk.LEFT)
-        Tooltip(save_preset_btn, "Save current engine settings as a custom preset (Engine presets folder)")
+        Tooltip(save_preset_btn, "Save current engine settings as a custom preset (Presets/Engine)")
 
         fields = ctk.CTkFrame(parent, fg_color="transparent")
         fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(2, 6))
@@ -571,7 +570,7 @@ class FS25ConfigTool:
             relief=tk.RAISED, borderwidth=1,
         )
         save_preset_btn.pack(side=tk.LEFT)
-        Tooltip(save_preset_btn, "Save current engine settings as a custom preset (Engine presets folder)")
+        Tooltip(save_preset_btn, "Save current engine settings as a custom preset (Presets/Engine)")
 
         fields = tk.Frame(parent, bg=self.colors['bg'])
         fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(2, 6))
@@ -654,7 +653,40 @@ class FS25ConfigTool:
 
     def get_drive_layout(self) -> str:
         """Return the generator key for the selected drive layout."""
-        return DRIVE_LAYOUT_LABELS.get(self.drive_layout_label.get(), "4wd")
+        return drive_layout_key(self.drive_layout_label.get())
+
+    def _apply_engine_dict(self, engine: Dict) -> None:
+        self.engine_data['name'].set(engine['name'])
+        self.engine_data['cost'].set(str(engine['cost']))
+        self.engine_data['horsepower'].set(str(engine['horsepower']))
+        self.engine_data['min_rpm'].set(str(engine['min_rpm']))
+        self.engine_data['max_rpm'].set(str(engine['max_rpm']))
+        self.engine_data['fuel_usage_scale'].set(str(engine['fuel_usage_scale']))
+        self.engine_data['turbocharged'].set(engine['turbocharged'])
+        curve = engine.get('torque_curve')
+        self._engine_torque_curve = list(curve) if curve else None
+
+    def _apply_transmission_dict(self, transmission: Dict) -> None:
+        self.transmission_data['name'].set(transmission['name'])
+        self.transmission_data['cost'].set(str(transmission['cost']))
+        self.transmission_data['type'].set(transmission['type'])
+        self.transmission_data['top_speed'].set(str(transmission['top_speed']))
+        self.transmission_data['num_forward'].set(str(transmission['num_forward']))
+        self.transmission_data['num_reverse'].set(str(transmission['num_reverse']))
+        self.transmission_data['enable_low_gearing'].set(transmission['enable_low_gearing'])
+        self.transmission_data['low_gear_boost'].set(str(transmission['low_gear_boost']))
+        self.transmission_data['use_custom_axle_ratio'].set(
+            bool(transmission.get('use_custom_axle_ratio', False))
+        )
+        if transmission.get('use_custom_axle_ratio') and 'axle_ratio' in transmission:
+            self.transmission_data['axle_ratio'].set(str(transmission['axle_ratio']))
+        else:
+            self.transmission_data['axle_ratio'].set('')
+        self._sync_transmission_axle_ui()
+
+    def _apply_drive_layout_key(self, layout_key: str) -> None:
+        label = DRIVE_LAYOUT_LABELS.get(layout_key, DRIVE_LAYOUT_LABELS["4wd"])
+        self.drive_layout_label.set(label)
 
     def setup_transmission_tab(self, parent):
         """Set up the transmission configuration tab."""
@@ -693,7 +725,7 @@ class FS25ConfigTool:
             command=self.save_custom_transmission_preset,
         )
         save_preset_btn.pack(side=tk.LEFT)
-        Tooltip(save_preset_btn, "Save current transmission settings as a custom preset (Transmission presets folder)")
+        Tooltip(save_preset_btn, "Save current transmission settings as a custom preset (Presets/Transmission)")
 
         fields = ctk.CTkFrame(parent, fg_color="transparent")
         fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(2, 6))
@@ -799,7 +831,7 @@ class FS25ConfigTool:
             relief=tk.RAISED, borderwidth=1,
         )
         save_preset_btn.pack(side=tk.LEFT)
-        Tooltip(save_preset_btn, "Save current transmission settings as a custom preset (Transmission presets folder)")
+        Tooltip(save_preset_btn, "Save current transmission settings as a custom preset (Presets/Transmission)")
 
         fields = tk.Frame(parent, bg=self.colors['bg'])
         fields.pack(fill=tk.BOTH, expand=True, padx=8, pady=(2, 6))
@@ -1586,36 +1618,13 @@ class FS25ConfigTool:
         """Load engine preset data into the form."""
         engine_presets = PresetManager.get_engine_presets()
         if preset_name in engine_presets:
-            preset = engine_presets[preset_name]
-            self.engine_data['name'].set(preset['name'])
-            self.engine_data['cost'].set(str(preset['cost']))
-            self.engine_data['horsepower'].set(str(preset['horsepower']))
-            self.engine_data['min_rpm'].set(str(preset['min_rpm']))
-            self.engine_data['max_rpm'].set(str(preset['max_rpm']))
-            self.engine_data['fuel_usage_scale'].set(str(preset['fuel_usage_scale']))
-            self.engine_data['turbocharged'].set(preset['turbocharged'])
+            self._apply_engine_dict(engine_presets[preset_name])
     
     def load_transmission_preset(self, preset_name):
         """Load transmission preset data into the form."""
         transmission_presets = PresetManager.get_transmission_presets()
         if preset_name in transmission_presets:
-            preset = transmission_presets[preset_name]
-            self.transmission_data['name'].set(preset['name'])
-            self.transmission_data['cost'].set(str(preset['cost']))
-            self.transmission_data['type'].set(preset['type'])
-            self.transmission_data['top_speed'].set(str(preset['top_speed']))
-            self.transmission_data['num_forward'].set(str(preset['num_forward']))
-            self.transmission_data['num_reverse'].set(str(preset['num_reverse']))
-            self.transmission_data['enable_low_gearing'].set(preset['enable_low_gearing'])
-            self.transmission_data['low_gear_boost'].set(str(preset['low_gear_boost']))
-            self.transmission_data['use_custom_axle_ratio'].set(
-                bool(preset.get('use_custom_axle_ratio', False))
-            )
-            if preset.get('use_custom_axle_ratio') and 'axle_ratio' in preset:
-                self.transmission_data['axle_ratio'].set(str(preset['axle_ratio']))
-            else:
-                self.transmission_data['axle_ratio'].set('')
-            self._sync_transmission_axle_ui()
+            self._apply_transmission_dict(transmission_presets[preset_name])
     
     def get_engine_data(self):
         """Get current engine data from form variables."""
@@ -1643,7 +1652,7 @@ class FS25ConfigTool:
             if fuel_usage_scale <= 0:
                 raise ValueError("Fuel usage scale must be greater than 0")
             
-            return {
+            payload = {
                 'name': name,
                 'cost': cost,
                 'horsepower': horsepower,
@@ -1652,6 +1661,9 @@ class FS25ConfigTool:
                 'fuel_usage_scale': fuel_usage_scale,
                 'turbocharged': turbocharged
             }
+            if self._engine_torque_curve:
+                payload['torque_curve'] = self._engine_torque_curve
+            return payload
         except ValueError as e:
             raise ValueError(f"Invalid numeric input in engine data: {str(e)}")
         except Exception as e:
@@ -1976,10 +1988,11 @@ class FS25ConfigTool:
                     show_error("Data Error", f"Failed to retrieve configuration data: {str(e)}")
                     return
                 
-                preset_data = {
-                    'engine': engine_data,
-                    'transmission': transmission_data
-                }
+                preset_data = wrap_configuration_file(
+                    engine_data,
+                    transmission_data,
+                    drive_layout=self.get_drive_layout(),
+                )
                 
                 # Save with specific error handling
                 try:
@@ -2008,57 +2021,17 @@ class FS25ConfigTool:
                     show_error("Error", f"Failed to load preset: {str(e)}")
                     return
                 if preset_data:
-                    # Load engine data with error handling
-                    if 'engine' in preset_data:
-                        try:
-                            engine = preset_data['engine']
-                            # Validate engine data structure
-                            required_engine_fields = ['name', 'cost', 'horsepower', 'min_rpm', 'max_rpm', 'fuel_usage_scale', 'turbocharged']
-                            for field in required_engine_fields:
-                                if field not in engine:
-                                    raise ValueError(f"Missing required engine field: {field}")
-                            
-                            self.engine_data['name'].set(str(engine['name']))
-                            self.engine_data['cost'].set(str(engine['cost']))
-                            self.engine_data['horsepower'].set(str(engine['horsepower']))
-                            self.engine_data['min_rpm'].set(str(engine['min_rpm']))
-                            self.engine_data['max_rpm'].set(str(engine['max_rpm']))
-                            self.engine_data['fuel_usage_scale'].set(str(engine['fuel_usage_scale']))
-                            self.engine_data['turbocharged'].set(bool(engine['turbocharged']))
-                        except (KeyError, ValueError, TypeError) as e:
-                            show_error("Error", f"Invalid engine data in preset: {str(e)}")
-                            return
-                    
-                    # Load transmission data with error handling
-                    if 'transmission' in preset_data:
-                        try:
-                            trans = preset_data['transmission']
-                            # Validate transmission data structure
-                            required_trans_fields = ['name', 'cost', 'type', 'top_speed', 'num_forward', 'num_reverse', 'enable_low_gearing', 'low_gear_boost']
-                            for field in required_trans_fields:
-                                if field not in trans:
-                                    raise ValueError(f"Missing required transmission field: {field}")
-                            
-                            self.transmission_data['name'].set(str(trans['name']))
-                            self.transmission_data['cost'].set(str(trans['cost']))
-                            self.transmission_data['type'].set(str(trans['type']))
-                            self.transmission_data['top_speed'].set(str(trans['top_speed']))
-                            self.transmission_data['num_forward'].set(str(trans['num_forward']))
-                            self.transmission_data['num_reverse'].set(str(trans['num_reverse']))
-                            self.transmission_data['enable_low_gearing'].set(bool(trans['enable_low_gearing']))
-                            self.transmission_data['low_gear_boost'].set(str(trans['low_gear_boost']))
-                            self.transmission_data['use_custom_axle_ratio'].set(
-                                bool(trans.get('use_custom_axle_ratio', False))
-                            )
-                            if trans.get('use_custom_axle_ratio') and 'axle_ratio' in trans:
-                                self.transmission_data['axle_ratio'].set(str(trans['axle_ratio']))
-                            else:
-                                self.transmission_data['axle_ratio'].set('')
-                            self._sync_transmission_axle_ui()
-                        except (KeyError, ValueError, TypeError) as e:
-                            show_error("Error", f"Invalid transmission data in preset: {str(e)}")
-                            return
-                    
+                    try:
+                        if 'engine' in preset_data:
+                            self._apply_engine_dict(preset_data['engine'])
+                        if 'transmission' in preset_data:
+                            self._apply_transmission_dict(preset_data['transmission'])
+                        if 'drive_layout' in preset_data:
+                            self._apply_drive_layout_key(preset_data['drive_layout'])
+                    except (KeyError, ValueError, TypeError) as e:
+                        show_error("Error", f"Invalid preset data: {str(e)}")
+                        return
+
                     show_info("Success", "Preset loaded successfully!")
         except Exception as e:
             show_error("Error", f"Failed to load preset: {str(e)}")
@@ -2137,7 +2110,7 @@ class FS25ConfigTool:
         return preset_name
 
     def save_custom_engine_preset(self):
-        """Save current engine settings into Custom Presets / Engine presets."""
+        """Save current engine settings into Presets/Engine."""
         try:
             try:
                 engine_data = self.get_engine_data()
@@ -2171,7 +2144,7 @@ class FS25ConfigTool:
             self._set_dropdown_value(self.engine_preset_dropdown, preset_name)
             show_info(
                 "Success",
-                f"Engine preset '{preset_name}' saved to Custom Presets / Engine presets.",
+                f"Engine preset '{preset_name}' saved to Presets/Engine.",
             )
             logger.info("Saved custom engine preset: %s", preset_name)
         except Exception as e:
@@ -2179,7 +2152,7 @@ class FS25ConfigTool:
             show_error("Error", f"Failed to save engine preset: {str(e)}")
 
     def save_custom_transmission_preset(self):
-        """Save current transmission settings into Custom Presets / Transmission presets."""
+        """Save current transmission settings into Presets/Transmission."""
         try:
             try:
                 transmission_data = self.get_transmission_data()
@@ -2219,7 +2192,7 @@ class FS25ConfigTool:
             self._set_dropdown_value(self.transmission_preset_dropdown, preset_name)
             show_info(
                 "Success",
-                f"Transmission preset '{preset_name}' saved to Custom Presets / Transmission presets.",
+                f"Transmission preset '{preset_name}' saved to Presets/Transmission.",
             )
             logger.info("Saved custom transmission preset: %s", preset_name)
         except Exception as e:

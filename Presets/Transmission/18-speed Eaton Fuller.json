@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "kind": "transmission",
+  "preset_name": "18-speed Eaton Fuller",
+  "transmission": {
+    "name": "18-speed Eaton Fuller",
+    "cost": 15000,
+    "type": "Manual",
+    "top_speed": 160.0,
+    "num_forward": 18,
+    "num_reverse": 2,
+    "enable_low_gearing": false,
+    "low_gear_boost": 25.0,
+    "use_custom_axle_ratio": false
+  },
+  "builtin": true
+}

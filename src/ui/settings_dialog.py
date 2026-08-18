@@ -103,13 +103,13 @@ def _show_settings_ctk(master, ctk, on_saved) -> None:
 
     ctk.CTkLabel(
         folder_frame,
-        text="Custom Presets location",
+        text="Presets location",
         font=ctk.CTkFont(size=13, weight="bold"),
     ).grid(row=0, column=0, columnspan=2, sticky="w", padx=12, pady=(10, 4))
 
     ctk.CTkLabel(
         folder_frame,
-        text="Contains “Engine presets” and “Transmission presets” subfolders.\n"
+        text="Contains Engine and Transmission subfolders.\n"
         f"Default: {default_presets_root()}",
         font=ctk.CTkFont(size=11),
         text_color="gray65",
@@ -124,7 +124,7 @@ def _show_settings_ctk(master, ctk, on_saved) -> None:
     def browse() -> None:
         chosen = filedialog.askdirectory(
             parent=dialog,
-            title="Select Custom Presets folder",
+            title="Select Presets folder",
             initialdir=path_var.get() or str(default_presets_root()),
         )
         if chosen:
@@ -209,7 +209,7 @@ def _show_settings_ctk(master, ctk, on_saved) -> None:
         try:
             root = Path(path_var.get().strip()).expanduser()
             if not str(root):
-                show_error("Settings", "Please choose a Custom Presets folder.")
+                show_error("Settings", "Please choose a Presets folder.")
                 return
             app_settings.save_settings(
                 presets_root=root,
@@ -293,7 +293,7 @@ def _show_settings_tk(master, on_saved) -> None:
     ).pack(anchor="w", pady=(2, 10))
 
     tk.Label(
-        frame, text="Custom Presets location", font=("Arial", 10, "bold"),
+        frame, text="Presets location", font=("Arial", 10, "bold"),
         bg="#1e1e1e", fg="#ffffff",
     ).pack(anchor="w")
 
@@ -308,7 +308,7 @@ def _show_settings_tk(master, on_saved) -> None:
     def browse() -> None:
         chosen = filedialog.askdirectory(
             parent=dialog,
-            title="Select Custom Presets folder",
+            title="Select Presets folder",
             initialdir=path_var.get() or str(default_presets_root()),
         )
         if chosen:
@@ -363,7 +363,7 @@ def _show_settings_tk(master, on_saved) -> None:
         try:
             root = Path(path_var.get().strip()).expanduser()
             if not str(root):
-                show_error("Settings", "Please choose a Custom Presets folder.")
+                show_error("Settings", "Please choose a Presets folder.")
                 return
             app_settings.save_settings(
                 presets_root=root,

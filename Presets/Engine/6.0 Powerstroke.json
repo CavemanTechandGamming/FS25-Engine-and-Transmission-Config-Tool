@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "engine",
+  "preset_name": "6.0 Powerstroke",
+  "engine": {
+    "name": "6.0 Powerstroke",
+    "cost": 12000,
+    "horsepower": 325.0,
+    "min_rpm": 650.0,
+    "max_rpm": 3500.0,
+    "fuel_usage_scale": 1.1,
+    "turbocharged": true,
+    "torque_curve": [
+      {
+        "rpm": 1200.0,
+        "torque": 0.56
+      },
+      {
+        "rpm": 1400.0,
+        "torque": 0.72
+      },
+      {
+        "rpm": 1600.0,
+        "torque": 0.86
+      },
+      {
+        "rpm": 1800.0,
+        "torque": 0.97
+      },
+      {
+        "rpm": 2000.0,
+        "torque": 1.0
+      },
+      {
+        "rpm": 2200.0,
+        "torque": 0.97
+      },
+      {
+        "rpm": 2400.0,
+        "torque": 0.91
+      },
+      {
+        "rpm": 2600.0,
+        "torque": 0.83
+      },
+      {
+        "rpm": 2800.0,
+        "torque": 0.72
+      },
+      {
+        "rpm": 3000.0,
+        "torque": 0.61
+      }
+    ]
+  },
+  "builtin": true
+}

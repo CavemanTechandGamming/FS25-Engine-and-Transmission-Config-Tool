@@ -18,7 +18,8 @@ Keep the **repository root** reserved for project metadata only:
 | `src/` | Application source code |
 | `scripts/` | Setup / run / build helpers |
 | `requirements/` | Python dependency pins |
-| `packaging/` | Installer definitions (Windows Inno Setup) |
+| `Presets/` | Shipped factory engine/transmission JSON |
+| `assets/` | App icons |
 
 Do not add application code, build outputs, or virtualenvs at the root.
 

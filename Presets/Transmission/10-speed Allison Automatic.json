@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "kind": "transmission",
+  "preset_name": "10-speed Allison Automatic",
+  "transmission": {
+    "name": "10-speed Allison Automatic",
+    "cost": 8000,
+    "type": "Automatic",
+    "top_speed": 120.0,
+    "num_forward": 10,
+    "num_reverse": 2,
+    "enable_low_gearing": false,
+    "low_gear_boost": 25.0,
+    "use_custom_axle_ratio": false
+  },
+  "builtin": true
+}

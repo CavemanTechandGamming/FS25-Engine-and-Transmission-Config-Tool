@@ -61,6 +61,7 @@ python -m PyInstaller --noconfirm --clean --windowed --onefile ^
   --icon "%ICON_ICO%" ^
   --add-data "%ICON_PNG%;assets" ^
   --add-data "%ICON_ICO%;assets" ^
+  --add-data "%CD%\Presets;Presets" ^
   --distpath "%PORTABLE_DIR%" ^
   --workpath "build\%PLATFORM%\%VERSION%\portable" ^
   --specpath "build\%PLATFORM%\%VERSION%\portable" ^

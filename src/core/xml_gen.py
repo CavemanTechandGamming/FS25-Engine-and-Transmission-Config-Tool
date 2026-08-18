@@ -124,6 +124,12 @@ class XMLGenerator:
 
     @staticmethod
     def _torque_points(engine_data: Dict) -> List[Tuple[float, float]]:
+        baked = engine_data.get("torque_curve")
+        if baked:
+            return [
+                (float(point["rpm"]), float(point["torque"]))
+                for point in baked
+            ]
         torque_curve = TorqueCurveGenerator.generate_torque_curve(
             engine_data["horsepower"],
             engine_data["min_rpm"],

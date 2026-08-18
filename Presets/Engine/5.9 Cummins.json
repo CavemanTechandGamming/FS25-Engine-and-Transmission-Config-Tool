@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "engine",
+  "preset_name": "5.9 Cummins",
+  "engine": {
+    "name": "5.9 Cummins",
+    "cost": 11000,
+    "horsepower": 325.0,
+    "min_rpm": 700.0,
+    "max_rpm": 3500.0,
+    "fuel_usage_scale": 1.0,
+    "turbocharged": true,
+    "torque_curve": [
+      {
+        "rpm": 1200.0,
+        "torque": 0.73
+      },
+      {
+        "rpm": 1400.0,
+        "torque": 0.95
+      },
+      {
+        "rpm": 1600.0,
+        "torque": 1.0
+      },
+      {
+        "rpm": 1800.0,
+        "torque": 0.96
+      },
+      {
+        "rpm": 2000.0,
+        "torque": 0.88
+      },
+      {
+        "rpm": 2200.0,
+        "torque": 0.8
+      },
+      {
+        "rpm": 2400.0,
+        "torque": 0.7
+      },
+      {
+        "rpm": 2600.0,
+        "torque": 0.6
+      },
+      {
+        "rpm": 2800.0,
+        "torque": 0.5
+      },
+      {
+        "rpm": 3000.0,
+        "torque": 0.38
+      }
+    ]
+  },
+  "builtin": true
+}
