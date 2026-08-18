@@ -198,6 +198,8 @@ class FS25ConfigTool:
         self._transmission_axle_row = None
         self._transmission_axle_entry = None
         self._transmission_axle_use_ctk = False
+        self._transmission_forward_gears = None
+        self._transmission_reverse_gears = None
         self.engine_preset_dropdown = None
         self.transmission_preset_dropdown = None
         self.drive_layout_label = tk.StringVar(value="Four-wheel drive (4WD)")
@@ -682,6 +684,10 @@ class FS25ConfigTool:
             self.transmission_data['axle_ratio'].set(str(transmission['axle_ratio']))
         else:
             self.transmission_data['axle_ratio'].set('')
+        fwd = transmission.get('forward_gears')
+        rev = transmission.get('reverse_gears')
+        self._transmission_forward_gears = list(fwd) if fwd else None
+        self._transmission_reverse_gears = list(rev) if rev else None
         self._sync_transmission_axle_ui()
 
     def _apply_drive_layout_key(self, layout_key: str) -> None:
@@ -1727,6 +1733,16 @@ class FS25ConfigTool:
             }
             if use_custom_axle_ratio:
                 payload['axle_ratio'] = axle_ratio
+            if (
+                self._transmission_forward_gears
+                and len(self._transmission_forward_gears) == num_forward
+            ):
+                payload['forward_gears'] = self._transmission_forward_gears
+            if (
+                self._transmission_reverse_gears
+                and len(self._transmission_reverse_gears) == num_reverse
+            ):
+                payload['reverse_gears'] = self._transmission_reverse_gears
             return payload
         except ValueError as e:
             raise ValueError(f"Invalid numeric input in transmission data: {str(e)}")

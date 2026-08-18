@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "transmission",
+  "preset_name": "Allison 10L1000",
+  "transmission": {
+    "name": "Allison 10L1000",
+    "cost": 8000,
+    "type": "Automatic",
+    "top_speed": 158.0,
+    "num_forward": 10,
+    "num_reverse": 1,
+    "enable_low_gearing": false,
+    "low_gear_boost": 25.0,
+    "use_custom_axle_ratio": false,
+    "forward_gears": [
+      {
+        "gearRatio": 4.7,
+        "name": "1"
+      },
+      {
+        "gearRatio": 2.99,
+        "name": "2"
+      },
+      {
+        "gearRatio": 2.15,
+        "name": "3"
+      },
+      {
+        "gearRatio": 1.8,
+        "name": "4"
+      },
+      {
+        "gearRatio": 1.52,
+        "name": "5"
+      },
+      {
+        "gearRatio": 1.28,
+        "name": "6"
+      },
+      {
+        "gearRatio": 1.0,
+        "name": "7"
+      },
+      {
+        "gearRatio": 0.85,
+        "name": "8"
+      },
+      {
+        "gearRatio": 0.69,
+        "name": "9"
+      },
+      {
+        "gearRatio": 0.63,
+        "name": "10"
+      }
+    ],
+    "reverse_gears": [
+      {
+        "gearRatio": 5.06,
+        "name": "R"
+      }
+    ]
+  },
+  "builtin": true
+}

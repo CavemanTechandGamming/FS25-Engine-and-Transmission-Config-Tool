@@ -12,16 +12,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Transmission form: optional **Custom axle ratio** with Giants `axleRatio` entry and hover tooltip (vanilla ranges by vehicle class). Unchecked = generator default; hidden for CVT.
 - **Drive layout** selector between Engine and Transmission (FWD / RWD / 4WD / 6×6), with tooltip noting wheel indices must match the mod vehicle.
 - Combined and engine-only XML include **`differentialConfigurations`** for the selected layout, with inline comments labeling the layout and each diff. Paste order matches vanilla: **consumer → differential → motor**, with blank lines between sections and between `</motor>` and `<transmission>`.
-- **Preset file schema v1** (`src/core/preset_schema.py`): validated JSON envelope for engine, transmission, and full-configuration files (`schema_version`, `kind`, optional `drive_layout` and engine `torque_curve`). Legacy unwrapped JSON still loads.
+- **Preset file schema v1** (`src/core/preset_schema.py`): validated JSON envelope for engine, transmission, and full-configuration files (`schema_version`, `kind`, optional `drive_layout`, engine `torque_curve`, and transmission `forward_gears` / `reverse_gears`). Legacy unwrapped JSON still loads.
 - Factory presets as JSON under `Presets/Engine/` and `Presets/Transmission/` (no longer hardcoded in Python). Portable and installer builds bundle that tree. Shipped Power Stroke and Cummins engines include engine-dyno **% of peak torque** curves (1200–3000 RPM). Existing `Custom Presets/` files are copied into the new folders on first load.
 - Combined preset Export/Import stores **drive layout** along with engine and transmission.
+- Factory manuals **New Process NP435** and **BorgWarner T18** (real 4-speed granny boxes, including the very deep reverse).
 
 ### Changed
 
 - Tooltips anchor below the control (flip above near screen bottom) instead of under the cursor; slightly larger readable text.
 - XML generation follows vanilla FS25 families: Automatic/highway Manual use `gearRatio` plus a Giants `axleRatio` (not a US 4.10 stamp); CVT uses min/max ratio with no gears; PowerShift uses `maxSpeed` gears and axle ~0.95.
 - Default preset folder is **`Presets/`** next to the app (Settings still lets you pick another location). Custom engine/transmission saves go in `Engine/` and `Transmission/` beside the factory files. Built-in names cannot be overwritten.
-- Generating XML uses a preset’s baked `torque_curve` when present; otherwise the previous auto-generated formula.
+- Generating XML uses a preset's baked `torque_curve` when present; otherwise the previous auto-generated formula.
+- Generating XML uses a preset's baked `forward_gears` / `reverse_gears` when present, including catalog gear names on the XML tags.
+- Shipped **Allison 10L1000** uses real ratios (three overdrives, last gear 0.63) and **158 km/h** top speed.
+- Shipped **Eaton Fuller RTLO-18913A** (**137 km/h**) and **RTLO-22918B** (**145 km/h**) use real splits, crawlers, and reverse sets.
+- Shipped **New Process NP435** and **BorgWarner T18** use **105 km/h**.
+- Factory transmission dropdown names are catalog model names.
 - `torqueScale` is derived from horsepower. Fuel Scale writes `<consumer usage>` instead of being stuffed into `torqueScale`.
 - Automatic gear spreads use overdrive (about 0.61 in 10th) instead of a linear 4.5→1.3.
 - PowerShift forward gears emit **whole km/h** `maxSpeed` values (Giants convention) instead of decimals.
@@ -29,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - PowerShift with a single reverse gear no longer emits an unrealistically slow reverse `maxSpeed` (first-gear floor); reverse uses the proper reverse speed cap for the configured top speed.
+
+### Removed
+
+- Factory preset **4-speed with Granny Gear**.
+- Factory dropdown nicknames **10-speed Allison Automatic**, **13-speed Eaton Fuller**, and **18-speed Eaton Fuller** (replaced by catalog model names).
 
 ## [1.1.0] - 2026-07-16
 

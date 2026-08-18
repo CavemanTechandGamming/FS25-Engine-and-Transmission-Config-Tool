@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "transmission",
+  "preset_name": "New Process NP435",
+  "transmission": {
+    "name": "New Process NP435",
+    "cost": 5000,
+    "type": "Manual",
+    "top_speed": 105.0,
+    "num_forward": 4,
+    "num_reverse": 1,
+    "enable_low_gearing": false,
+    "low_gear_boost": 25.0,
+    "use_custom_axle_ratio": false,
+    "forward_gears": [
+      {
+        "gearRatio": 6.69,
+        "name": "Granny"
+      },
+      {
+        "gearRatio": 3.34,
+        "name": "2"
+      },
+      {
+        "gearRatio": 1.66,
+        "name": "3"
+      },
+      {
+        "gearRatio": 1.0,
+        "name": "4"
+      }
+    ],
+    "reverse_gears": [
+      {
+        "gearRatio": 8.26,
+        "name": "R"
+      }
+    ]
+  },
+  "builtin": true
+}

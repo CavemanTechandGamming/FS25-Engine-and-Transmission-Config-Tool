@@ -94,6 +94,8 @@ class GearRatioCalculator:
         enable_low_gearing: bool = False,
         low_gear_boost: float = 25.0,
         custom_axle_ratio: Optional[float] = None,
+        forward_gears: Optional[List] = None,
+        reverse_gears: Optional[List] = None,
     ) -> Dict:
         if num_forward <= 0:
             raise ValueError("Number of forward gears must be greater than 0")
@@ -125,6 +127,29 @@ class GearRatioCalculator:
                 enable_low_gearing,
                 low_gear_boost,
             )
+
+        if forward_gears and spec.get("family") == "discrete_gearRatio":
+            spec["forward"] = [
+                {"gearRatio": g["gearRatio"], **({"name": g["name"]} if g.get("name") else {})}
+                if isinstance(g, dict)
+                else {"gearRatio": float(g)}
+                for g in forward_gears
+            ]
+        if reverse_gears is not None and spec.get("family") == "discrete_gearRatio":
+            spec["backward"] = [
+                {
+                    "gearRatio": g["gearRatio"] if isinstance(g, dict) else abs(float(g)),
+                    **(
+                        {"name": g["name"]}
+                        if isinstance(g, dict) and g.get("name")
+                        else {}
+                    ),
+                }
+                for g in reverse_gears
+            ]
+            for i, gear in enumerate(spec["backward"]):
+                if "name" not in gear:
+                    gear["name"] = "R" if len(spec["backward"]) == 1 else f"R{i + 1}"
 
         if (
             custom_axle_ratio is not None

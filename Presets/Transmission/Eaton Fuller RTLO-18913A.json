@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "kind": "transmission",
+  "preset_name": "Eaton Fuller RTLO-18913A",
+  "transmission": {
+    "name": "Eaton Fuller RTLO-18913A",
+    "cost": 12000,
+    "type": "Manual",
+    "top_speed": 137.0,
+    "num_forward": 13,
+    "num_reverse": 2,
+    "enable_low_gearing": false,
+    "low_gear_boost": 25.0,
+    "use_custom_axle_ratio": false,
+    "forward_gears": [
+      {
+        "gearRatio": 12.31,
+        "name": "Lo"
+      },
+      {
+        "gearRatio": 8.6,
+        "name": "1"
+      },
+      {
+        "gearRatio": 6.22,
+        "name": "2"
+      },
+      {
+        "gearRatio": 4.54,
+        "name": "3"
+      },
+      {
+        "gearRatio": 3.38,
+        "name": "4"
+      },
+      {
+        "gearRatio": 2.47,
+        "name": "5"
+      },
+      {
+        "gearRatio": 2.11,
+        "name": "5H"
+      },
+      {
+        "gearRatio": 1.74,
+        "name": "6"
+      },
+      {
+        "gearRatio": 1.49,
+        "name": "6H"
+      },
+      {
+        "gearRatio": 1.23,
+        "name": "7"
+      },
+      {
+        "gearRatio": 1.05,
+        "name": "7H"
+      },
+      {
+        "gearRatio": 0.86,
+        "name": "8"
+      },
+      {
+        "gearRatio": 0.73,
+        "name": "8H"
+      }
+    ],
+    "reverse_gears": [
+      {
+        "gearRatio": 13.23,
+        "name": "R Lo"
+      },
+      {
+        "gearRatio": 3.78,
+        "name": "R Hi"
+      }
+    ]
+  },
+  "builtin": true
+}

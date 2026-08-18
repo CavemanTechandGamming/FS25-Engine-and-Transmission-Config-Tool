@@ -229,7 +229,7 @@ class XMLGenerator:
                 )
             else:
                 gears.append(
-                    f'<forwardGear gearRatio="{_fmt_num(gear["gearRatio"])}"/>'
+                    f'<forwardGear gearRatio="{_fmt_num(gear["gearRatio"])}"{extra}/>'
                 )
 
         return (
@@ -373,8 +373,8 @@ class XMLGenerator:
         return transmission_data.get("axle_ratio")
 
     @staticmethod
-    def generate_transmission_xml(transmission_data: Dict) -> str:
-        spec = GearRatioCalculator.build_transmission(
+    def _transmission_spec(transmission_data: Dict):
+        return GearRatioCalculator.build_transmission(
             transmission_data["type"],
             transmission_data["num_forward"],
             transmission_data["num_reverse"],
@@ -382,7 +382,13 @@ class XMLGenerator:
             transmission_data.get("enable_low_gearing", False),
             transmission_data.get("low_gear_boost", 25.0),
             XMLGenerator._custom_axle(transmission_data),
+            transmission_data.get("forward_gears"),
+            transmission_data.get("reverse_gears"),
         )
+
+    @staticmethod
+    def generate_transmission_xml(transmission_data: Dict) -> str:
+        spec = XMLGenerator._transmission_spec(transmission_data)
         top = transmission_data["top_speed"]
         motor_open = (
             f'<motor torqueScale="1.0" minRpm="1000" maxRpm="6000" '
@@ -410,15 +416,7 @@ class XMLGenerator:
         drive_layout: str = "4wd",
     ) -> str:
         points = XMLGenerator._torque_points(engine_data)
-        spec = GearRatioCalculator.build_transmission(
-            transmission_data["type"],
-            transmission_data["num_forward"],
-            transmission_data["num_reverse"],
-            transmission_data["top_speed"],
-            transmission_data.get("enable_low_gearing", False),
-            transmission_data.get("low_gear_boost", 25.0),
-            XMLGenerator._custom_axle(transmission_data),
-        )
+        spec = XMLGenerator._transmission_spec(transmission_data)
         torque_scale = TorqueCurveGenerator.torque_scale_from_hp(
             engine_data["horsepower"], engine_data["max_rpm"]
         )

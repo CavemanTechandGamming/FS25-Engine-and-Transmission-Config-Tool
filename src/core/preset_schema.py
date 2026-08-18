@@ -59,6 +59,36 @@ TRANSMISSION_OPTIONAL_GEAR_FIELDS = (
 )
 
 
+def _normalize_gear_list(raw: Any, label: str, field: str) -> List[Dict[str, Any]]:
+    """List of {gearRatio, optional name}. Negative ratios (reverse catalogs) become positive."""
+    if not isinstance(raw, list) or len(raw) < 1:
+        raise ValueError(f"{label}: {field} must be a non-empty list")
+    gears: List[Dict[str, Any]] = []
+    for i, item in enumerate(raw):
+        name = None
+        if isinstance(item, dict):
+            if "gearRatio" in item:
+                ratio = float(item["gearRatio"])
+            elif "ratio" in item:
+                ratio = float(item["ratio"])
+            else:
+                raise ValueError(f"{label}: {field}[{i}] needs gearRatio")
+            if item.get("name"):
+                name = str(item["name"]).strip() or None
+        elif isinstance(item, (int, float)):
+            ratio = float(item)
+        else:
+            raise ValueError(f"{label}: {field}[{i}] must be a number or {{gearRatio}}")
+        ratio = abs(ratio)
+        if ratio <= 0:
+            raise ValueError(f"{label}: {field}[{i}] gearRatio must be greater than 0")
+        entry: Dict[str, Any] = {"gearRatio": round(ratio, 3)}
+        if name:
+            entry["name"] = name
+        gears.append(entry)
+    return gears
+
+
 def drive_layout_key(value: str) -> str:
     """Normalize UI label or key to a generator drive-layout key."""
     text = (value or "").strip()
@@ -203,7 +233,18 @@ def validate_transmission_payload(data: Dict, *, label: str = "Transmission pres
             raise ValueError(f"{label}: axle_ratio must be greater than 0")
         normalized["axle_ratio"] = axle_ratio
 
+    if "forward_gears" in payload:
+        forward_gears = _normalize_gear_list(payload["forward_gears"], label, "forward_gears")
+        normalized["forward_gears"] = forward_gears
+        normalized["num_forward"] = len(forward_gears)
+    if "reverse_gears" in payload:
+        reverse_gears = _normalize_gear_list(payload["reverse_gears"], label, "reverse_gears")
+        normalized["reverse_gears"] = reverse_gears
+        normalized["num_reverse"] = len(reverse_gears)
+
     for field in TRANSMISSION_OPTIONAL_GEAR_FIELDS:
+        if field in ("forward_gears", "reverse_gears"):
+            continue
         if field in payload:
             normalized[field] = deepcopy(payload[field])
 
