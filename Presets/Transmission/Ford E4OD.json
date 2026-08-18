@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "kind": "transmission",
+  "preset_name": "Ford E4OD",
+  "transmission": {
+    "name": "Ford E4OD",
+    "cost": 8000,
+    "type": "Automatic",
+    "top_speed": 177.0,
+    "num_forward": 4,
+    "num_reverse": 1,
+    "enable_low_gearing": false,
+    "low_gear_boost": 25.0,
+    "use_custom_axle_ratio": false,
+    "forward_gears": [
+      {"gearRatio": 2.71, "name": "1"},
+      {"gearRatio": 1.54, "name": "2"},
+      {"gearRatio": 1.0, "name": "3"},
+      {"gearRatio": 0.71, "name": "4"}
+    ],
+    "reverse_gears": [{"gearRatio": 2.18, "name": "R"}]
+  },
+  "builtin": true
+}

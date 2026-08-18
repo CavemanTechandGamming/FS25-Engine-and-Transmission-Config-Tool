@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "transmission",
+  "preset_name": "Ford TorqShift 5R110",
+  "transmission": {
+    "name": "Ford TorqShift 5R110",
+    "cost": 4500,
+    "type": "Automatic",
+    "top_speed": 153.0,
+    "num_forward": 5,
+    "num_reverse": 1,
+    "enable_low_gearing": false,
+    "low_gear_boost": 25.0,
+    "use_custom_axle_ratio": false,
+    "forward_gears": [
+      {"gearRatio": 3.11, "name": "1"},
+      {"gearRatio": 2.2, "name": "2"},
+      {"gearRatio": 1.54, "name": "3"},
+      {"gearRatio": 1.0, "name": "4"},
+      {"gearRatio": 0.71, "name": "5"}
+    ],
+    "reverse_gears": [{"gearRatio": 2.88, "name": "R"}]
+  },
+  "builtin": true
+}

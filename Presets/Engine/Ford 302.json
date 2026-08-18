@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "kind": "engine",
+  "preset_name": "Ford 302",
+  "engine": {
+    "name": "Ford 302",
+    "cost": 6850,
+    "horsepower": 185.0,
+    "min_rpm": 700.0,
+    "max_rpm": 5000.0,
+    "fuel_usage_scale": 1.0,
+    "turbocharged": false,
+    "torque_curve": [
+      {"rpm": 700.0, "torque": 0.42},
+      {"rpm": 1000.0, "torque": 0.55},
+      {"rpm": 1400.0, "torque": 0.68},
+      {"rpm": 1600.0, "torque": 0.76},
+      {"rpm": 2000.0, "torque": 0.91},
+      {"rpm": 2200.0, "torque": 0.97},
+      {"rpm": 2400.0, "torque": 1.0},
+      {"rpm": 2800.0, "torque": 0.94},
+      {"rpm": 3400.0, "torque": 0.82},
+      {"rpm": 4000.0, "torque": 0.66},
+      {"rpm": 4500.0, "torque": 0.5},
+      {"rpm": 5000.0, "torque": 0.38}
+    ]
+  },
+  "builtin": true
+}

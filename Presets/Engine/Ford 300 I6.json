@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "kind": "engine",
+  "preset_name": "Ford 300 I6",
+  "engine": {
+    "name": "Ford 300 I6",
+    "cost": 5500,
+    "horsepower": 150.0,
+    "min_rpm": 650.0,
+    "max_rpm": 3600.0,
+    "fuel_usage_scale": 1.0,
+    "turbocharged": false,
+    "torque_curve": [
+      {"rpm": 650.0, "torque": 0.55},
+      {"rpm": 1000.0, "torque": 0.88},
+      {"rpm": 1400.0, "torque": 0.98},
+      {"rpm": 1600.0, "torque": 1.0},
+      {"rpm": 2000.0, "torque": 0.92},
+      {"rpm": 2200.0, "torque": 0.86},
+      {"rpm": 2400.0, "torque": 0.78},
+      {"rpm": 2800.0, "torque": 0.64},
+      {"rpm": 3400.0, "torque": 0.45},
+      {"rpm": 3600.0, "torque": 0.3}
+    ]
+  },
+  "builtin": true
+}

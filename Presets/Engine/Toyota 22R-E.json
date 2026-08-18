@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "kind": "engine",
+  "preset_name": "Toyota 22R-E",
+  "engine": {
+    "name": "Toyota 22R-E",
+    "cost": 4150,
+    "horsepower": 112.0,
+    "min_rpm": 750.0,
+    "max_rpm": 5500.0,
+    "fuel_usage_scale": 1.0,
+    "turbocharged": false,
+    "torque_curve": [
+      {"rpm": 750.0, "torque": 0.5},
+      {"rpm": 1000.0, "torque": 0.68},
+      {"rpm": 1400.0, "torque": 0.78},
+      {"rpm": 1600.0, "torque": 0.84},
+      {"rpm": 1800.0, "torque": 0.88},
+      {"rpm": 2000.0, "torque": 0.92},
+      {"rpm": 2400.0, "torque": 0.96},
+      {"rpm": 2800.0, "torque": 1.0},
+      {"rpm": 3400.0, "torque": 0.9},
+      {"rpm": 4000.0, "torque": 0.78},
+      {"rpm": 4500.0, "torque": 0.65},
+      {"rpm": 5500.0, "torque": 0.42}
+    ]
+  },
+  "builtin": true
+}

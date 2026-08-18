@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "engine",
+  "preset_name": "Chevy 454",
+  "engine": {
+    "name": "Chevy 454",
+    "cost": 8500,
+    "horsepower": 230.0,
+    "min_rpm": 700.0,
+    "max_rpm": 4400.0,
+    "fuel_usage_scale": 1.0,
+    "turbocharged": false,
+    "torque_curve": [
+      {"rpm": 700.0, "torque": 0.6},
+      {"rpm": 1000.0, "torque": 0.74},
+      {"rpm": 1400.0, "torque": 0.85},
+      {"rpm": 1600.0, "torque": 0.9},
+      {"rpm": 2000.0, "torque": 0.96},
+      {"rpm": 2200.0, "torque": 1.0},
+      {"rpm": 2400.0, "torque": 0.98},
+      {"rpm": 2800.0, "torque": 0.91},
+      {"rpm": 3400.0, "torque": 0.79},
+      {"rpm": 4000.0, "torque": 0.6},
+      {"rpm": 4400.0, "torque": 0.5}
+    ]
+  },
+  "builtin": true
+}

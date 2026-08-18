@@ -16,7 +16,7 @@ Here's the main window:
 ## Features
 
 - Dark-mode GUI (CustomTkinter, with Tkinter fallback)
-- Engine setup with auto-generated torque curves (turbo and naturally aspirated); shipped diesel presets use real engine-dyno shapes
+- Engine setup with auto-generated torque curves (turbo and naturally aspirated); shipped presets use real engine-dyno shapes (diesels and gas)
 - Transmission support: Manual, Automatic, CVT, PowerShift
 - Drive layout selector (FWD / RWD / 4WD / 6×6) that writes matching `differentialConfigurations`
 - Optional custom Giants axle ratio (hidden for CVT)
@@ -51,9 +51,9 @@ Here's the main window:
 
 ### Built-in presets
 
-**Engines:** 7.3 / 6.0 / 6.7 Powerstroke · 5.9 / 6.7 Cummins
+**Engines (17):** 7.3 / 6.0 / 6.7 Powerstroke · 5.9 / 6.7 Cummins · Ford 300 I6 · Chevy 350 / 305 / 454 · Ford 302 · Ford 351 Windsor · Ford 351 Cleveland · Ford 460 · Toyota 22R-E · Cummins 4BT · Willys Go-Devil · Isuzu 4BD1T
 
-**Transmissions:** Allison 10L1000 · Eaton Fuller RTLO-18913A · Eaton Fuller RTLO-22918B · New Process NP435 · BorgWarner T18
+**Transmissions (21):** NP435 · T18 · Muncie SM465 · TH400 · Ford C6 · 700R4 · E4OD · 4L80-E · M5OD-R2 · ZF S5-42 · NV4500 · NV4500 Diesel · Allison 1000 5/6-spd · 10L1000 · Eaton RTLO-18913A · RTLO-22918B · Toyota W56 · Willys T-90 · Isuzu MSA-5G · Ford TorqShift 5R110
 
 ### More screenshots
 

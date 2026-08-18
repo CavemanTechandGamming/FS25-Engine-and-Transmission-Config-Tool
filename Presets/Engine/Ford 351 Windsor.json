@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "engine",
+  "preset_name": "Ford 351 Windsor",
+  "engine": {
+    "name": "Ford 351 Windsor",
+    "cost": 7800,
+    "horsepower": 210.0,
+    "min_rpm": 700.0,
+    "max_rpm": 4800.0,
+    "fuel_usage_scale": 1.0,
+    "turbocharged": false,
+    "torque_curve": [
+      {"rpm": 700.0, "torque": 0.48},
+      {"rpm": 1000.0, "torque": 0.68},
+      {"rpm": 1400.0, "torque": 0.78},
+      {"rpm": 1600.0, "torque": 0.83},
+      {"rpm": 2000.0, "torque": 0.92},
+      {"rpm": 2200.0, "torque": 0.96},
+      {"rpm": 2400.0, "torque": 0.98},
+      {"rpm": 2800.0, "torque": 1.0},
+      {"rpm": 3400.0, "torque": 0.88},
+      {"rpm": 4000.0, "torque": 0.72},
+      {"rpm": 4800.0, "torque": 0.42}
+    ]
+  },
+  "builtin": true
+}

@@ -13,9 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Drive layout** selector between Engine and Transmission (FWD / RWD / 4WD / 6×6), with tooltip noting wheel indices must match the mod vehicle.
 - Combined and engine-only XML include **`differentialConfigurations`** for the selected layout, with inline comments labeling the layout and each diff. Paste order matches vanilla: **consumer → differential → motor**, with blank lines between sections and between `</motor>` and `<transmission>`.
 - **Preset file schema v1** (`src/core/preset_schema.py`): validated JSON envelope for engine, transmission, and full-configuration files (`schema_version`, `kind`, optional `drive_layout`, engine `torque_curve`, and transmission `forward_gears` / `reverse_gears`). Legacy unwrapped JSON still loads.
-- Factory presets as JSON under `Presets/Engine/` and `Presets/Transmission/` (no longer hardcoded in Python). Portable and installer builds bundle that tree. Shipped Power Stroke and Cummins engines include engine-dyno **% of peak torque** curves (1200–3000 RPM). Existing `Custom Presets/` files are copied into the new folders on first load.
+- Factory presets as JSON under `Presets/Engine/` and `Presets/Transmission/` (no longer hardcoded in Python). Portable and installer builds bundle that tree. Shipped Power Stroke and Cummins engines include full idle-to-redline engine-dyno **% of peak torque** curves. Existing `Custom Presets/` files are copied into the new folders on first load.
 - Combined preset Export/Import stores **drive layout** along with engine and transmission.
 - Factory manuals **New Process NP435** and **BorgWarner T18** (real 4-speed granny boxes, including the very deep reverse).
+- Factory gas engines **Ford 300 I6**, **Chevy 350**, **Ford 351 Windsor**, **Ford 351 Cleveland**, **Ford 302**, **Chevy 305**, **Chevy 454**, and **Ford 460** with baked idle-to-redline **% of peak torque** curves.
+- Factory four-cylinder engines **Toyota 22R-E**, **Cummins 4BT**, **Willys Go-Devil**, and **Isuzu 4BD1T** with baked idle-to-redline **% of peak torque** curves.
+- Factory transmissions with baked real gear ratios and top speeds: **Muncie SM465**, **Hydra-Matic TH400**, **Ford C6**, **700R4**, **Ford E4OD**, **4L80-E**, **Mazda M5OD-R2**, **ZF S5-42**, **New Venture NV4500** (gas and diesel variants), **Allison 1000 Series** (5- and 6-speed), **Toyota W56**, **Willys BorgWarner T-90**, **Isuzu MSA-5G**, and **Ford TorqShift 5R110** (2004 Excursion; 5-speed ECU shift map).
 
 ### Changed
 
@@ -26,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Generating XML uses a preset's baked `forward_gears` / `reverse_gears` when present, including catalog gear names on the XML tags.
 - Shipped **Allison 10L1000** uses real ratios (three overdrives, last gear 0.63) and **158 km/h** top speed.
 - Shipped **Eaton Fuller RTLO-18913A** (**137 km/h**) and **RTLO-22918B** (**145 km/h**) use real splits, crawlers, and reverse sets.
-- Shipped **New Process NP435** and **BorgWarner T18** use **105 km/h**.
+- Shipped **Power Stroke** and **Cummins** diesel presets use full idle-to-redline baked torque curves (not 1200–3000 only).
 - Factory transmission dropdown names are catalog model names.
 - `torqueScale` is derived from horsepower. Fuel Scale writes `<consumer usage>` instead of being stuffed into `torqueScale`.
 - Automatic gear spreads use overdrive (about 0.61 in 10th) instead of a linear 4.5→1.3.

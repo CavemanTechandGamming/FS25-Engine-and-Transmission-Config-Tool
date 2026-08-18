@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "transmission",
+  "preset_name": "Isuzu MSA-5G",
+  "transmission": {
+    "name": "Isuzu MSA-5G",
+    "cost": 5500,
+    "type": "Manual",
+    "top_speed": 128.0,
+    "num_forward": 5,
+    "num_reverse": 1,
+    "enable_low_gearing": false,
+    "low_gear_boost": 25.0,
+    "use_custom_axle_ratio": false,
+    "forward_gears": [
+      {"gearRatio": 4.98, "name": "1"},
+      {"gearRatio": 2.74, "name": "2"},
+      {"gearRatio": 1.65, "name": "3"},
+      {"gearRatio": 1.0, "name": "4"},
+      {"gearRatio": 0.78, "name": "5"}
+    ],
+    "reverse_gears": [{"gearRatio": 4.62, "name": "R"}]
+  },
+  "builtin": true
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "transmission",
+  "preset_name": "Toyota W56",
+  "transmission": {
+    "name": "Toyota W56",
+    "cost": 4500,
+    "type": "Manual",
+    "top_speed": 137.0,
+    "num_forward": 5,
+    "num_reverse": 1,
+    "enable_low_gearing": false,
+    "low_gear_boost": 25.0,
+    "use_custom_axle_ratio": false,
+    "forward_gears": [
+      {"gearRatio": 3.95, "name": "1"},
+      {"gearRatio": 2.14, "name": "2"},
+      {"gearRatio": 1.38, "name": "3"},
+      {"gearRatio": 1.0, "name": "4"},
+      {"gearRatio": 0.85, "name": "5"}
+    ],
+    "reverse_gears": [{"gearRatio": 4.09, "name": "R"}]
+  },
+  "builtin": true
+}

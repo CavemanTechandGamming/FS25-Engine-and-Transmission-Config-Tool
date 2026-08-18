@@ -11,46 +11,23 @@
     "fuel_usage_scale": 1.3,
     "turbocharged": true,
     "torque_curve": [
-      {
-        "rpm": 1200.0,
-        "torque": 0.65
-      },
-      {
-        "rpm": 1400.0,
-        "torque": 0.82
-      },
-      {
-        "rpm": 1600.0,
-        "torque": 1.0
-      },
-      {
-        "rpm": 1800.0,
-        "torque": 1.0
-      },
-      {
-        "rpm": 2000.0,
-        "torque": 0.94
-      },
-      {
-        "rpm": 2200.0,
-        "torque": 0.85
-      },
-      {
-        "rpm": 2400.0,
-        "torque": 0.75
-      },
-      {
-        "rpm": 2600.0,
-        "torque": 0.64
-      },
-      {
-        "rpm": 2800.0,
-        "torque": 0.52
-      },
-      {
-        "rpm": 3000.0,
-        "torque": 0.4
-      }
+      {"rpm": 650.0, "torque": 0.35},
+      {"rpm": 800.0, "torque": 0.42},
+      {"rpm": 1000.0, "torque": 0.52},
+      {"rpm": 1100.0, "torque": 0.58},
+      {"rpm": 1200.0, "torque": 0.65},
+      {"rpm": 1400.0, "torque": 0.82},
+      {"rpm": 1600.0, "torque": 1.0},
+      {"rpm": 1800.0, "torque": 1.0},
+      {"rpm": 2000.0, "torque": 0.94},
+      {"rpm": 2200.0, "torque": 0.85},
+      {"rpm": 2400.0, "torque": 0.75},
+      {"rpm": 2600.0, "torque": 0.64},
+      {"rpm": 2800.0, "torque": 0.52},
+      {"rpm": 3000.0, "torque": 0.4},
+      {"rpm": 3200.0, "torque": 0.32},
+      {"rpm": 3400.0, "torque": 0.25},
+      {"rpm": 3500.0, "torque": 0.2}
     ]
   },
   "builtin": true

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "engine",
+  "preset_name": "Isuzu 4BD1T",
+  "engine": {
+    "name": "Isuzu 4BD1T",
+    "cost": 5000,
+    "horsepower": 135.0,
+    "min_rpm": 700.0,
+    "max_rpm": 3200.0,
+    "fuel_usage_scale": 1.0,
+    "turbocharged": true,
+    "torque_curve": [
+      {"rpm": 700.0, "torque": 0.55},
+      {"rpm": 1000.0, "torque": 0.72},
+      {"rpm": 1400.0, "torque": 0.88},
+      {"rpm": 1600.0, "torque": 0.95},
+      {"rpm": 1800.0, "torque": 1.0},
+      {"rpm": 2000.0, "torque": 0.98},
+      {"rpm": 2400.0, "torque": 0.88},
+      {"rpm": 2800.0, "torque": 0.75},
+      {"rpm": 3200.0, "torque": 0.45}
+    ]
+  },
+  "builtin": true
+}

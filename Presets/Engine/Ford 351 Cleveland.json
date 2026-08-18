@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "kind": "engine",
+  "preset_name": "Ford 351 Cleveland",
+  "engine": {
+    "name": "Ford 351 Cleveland",
+    "cost": 9250,
+    "horsepower": 250.0,
+    "min_rpm": 800.0,
+    "max_rpm": 5800.0,
+    "fuel_usage_scale": 1.0,
+    "turbocharged": false,
+    "torque_curve": [
+      {"rpm": 800.0, "torque": 0.4},
+      {"rpm": 1000.0, "torque": 0.52},
+      {"rpm": 1400.0, "torque": 0.63},
+      {"rpm": 1600.0, "torque": 0.68},
+      {"rpm": 2000.0, "torque": 0.78},
+      {"rpm": 2200.0, "torque": 0.83},
+      {"rpm": 2400.0, "torque": 0.88},
+      {"rpm": 2800.0, "torque": 0.94},
+      {"rpm": 3400.0, "torque": 1.0},
+      {"rpm": 4000.0, "torque": 0.92},
+      {"rpm": 4500.0, "torque": 0.83},
+      {"rpm": 5800.0, "torque": 0.55}
+    ]
+  },
+  "builtin": true
+}

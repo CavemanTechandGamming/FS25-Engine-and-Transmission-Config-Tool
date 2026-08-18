@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "transmission",
+  "preset_name": "ZF S5-42",
+  "transmission": {
+    "name": "ZF S5-42",
+    "cost": 6000,
+    "type": "Manual",
+    "top_speed": 160.0,
+    "num_forward": 5,
+    "num_reverse": 1,
+    "enable_low_gearing": false,
+    "low_gear_boost": 25.0,
+    "use_custom_axle_ratio": false,
+    "forward_gears": [
+      {"gearRatio": 5.72, "name": "1"},
+      {"gearRatio": 2.94, "name": "2"},
+      {"gearRatio": 1.61, "name": "3"},
+      {"gearRatio": 1.0, "name": "4"},
+      {"gearRatio": 0.76, "name": "5"}
+    ],
+    "reverse_gears": [{"gearRatio": 5.24, "name": "R"}]
+  },
+  "builtin": true
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "transmission",
+  "preset_name": "New Venture NV4500 Diesel",
+  "transmission": {
+    "name": "New Venture NV4500 Diesel",
+    "cost": 6500,
+    "type": "Manual",
+    "top_speed": 153.0,
+    "num_forward": 5,
+    "num_reverse": 1,
+    "enable_low_gearing": false,
+    "low_gear_boost": 25.0,
+    "use_custom_axle_ratio": false,
+    "forward_gears": [
+      {"gearRatio": 5.61, "name": "1"},
+      {"gearRatio": 3.04, "name": "2"},
+      {"gearRatio": 1.67, "name": "3"},
+      {"gearRatio": 1.0, "name": "4"},
+      {"gearRatio": 0.75, "name": "5"}
+    ],
+    "reverse_gears": [{"gearRatio": 5.61, "name": "R"}]
+  },
+  "builtin": true
+}

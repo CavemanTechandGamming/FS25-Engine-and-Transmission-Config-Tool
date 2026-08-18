@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "engine",
+  "preset_name": "Cummins 4BT",
+  "engine": {
+    "name": "Cummins 4BT",
+    "cost": 3900,
+    "horsepower": 105.0,
+    "min_rpm": 750.0,
+    "max_rpm": 3000.0,
+    "fuel_usage_scale": 1.0,
+    "turbocharged": false,
+    "torque_curve": [
+      {"rpm": 750.0, "torque": 0.6},
+      {"rpm": 1000.0, "torque": 0.85},
+      {"rpm": 1400.0, "torque": 0.98},
+      {"rpm": 1600.0, "torque": 1.0},
+      {"rpm": 1800.0, "torque": 0.96},
+      {"rpm": 2000.0, "torque": 0.88},
+      {"rpm": 2400.0, "torque": 0.7},
+      {"rpm": 2800.0, "torque": 0.52},
+      {"rpm": 3000.0, "torque": 0.4}
+    ]
+  },
+  "builtin": true
+}
